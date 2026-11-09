@@ -1043,7 +1043,7 @@ if(typeof original!=="function"||!source?.create){
  console.error("KT77 R06: R13 selection or PI MASTER reader unavailable");
  return;
 }
-const index=source.create("../gis-data/pi-master/browser-index/");
+const index=source.create("https://emilgergov.github.io/TPU-Plovdiv-WOW-2.0/v26-test/gis-data/pi-master/browser-index/");
 const nf=(value,precision=3)=>Number(value).toLocaleString("bg-BG",{maximumFractionDigits:precision});
 const fmt=(value)=>nf(value)+" кв. м";
 let token=0;
