@@ -58,6 +58,9 @@ function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,multi=
   e[24]='Приложими са режимите на BG0001031.';
   e[25]=p[25];
   e[32]=[{text:'Изводът за пространствено '},{text:'попада',bold:true},{text:'не на имота се прави с оглед на BG0001031.'}];
+  e[38]='4. ПРЕЦЕНКА НА КОМПЕТЕНТНИЯ ОРГАН';
+  e[39]='Настоящият проектен статус не позволява категорично определяне на процедурното ниво или необходимостта от екологична оценка.';
+  e[40]='Предварителното мнение е, че е възможно да се приложи опростен административен режим след допълнителна експертна проверка.';
  }else{
   p[22]='Поземленият имот с идентификатор '+id+' не попада в границите на защитени зони.';
   p[24]='Поземленият имот с идентификатор '+id+'не попада в границите на защитени територии.';
@@ -88,6 +91,10 @@ async function run(){
   assert.ok(c.txt(11).includes('Тестова'),'subject must retain input municipality');
   if(zt)assert.equal((c.txt(11).match(new RegExp(id.replaceAll('.','\\.'),'g'))||[]).length,1,'duplicated parcel in heading forbidden');
   assert.equal(phraseRuns(c,11,'Относно').every(r=>r.bold&&r.italic),true,'heading bold and italic');
+  for(const obj of [c,e]){
+   assert.equal(phraseRuns(obj,11,'Уведомление за инвестиционно предложение (ИП)').every(r=>!r.bold&&r.italic),true,'heading descriptor italic and NOT bold');
+   assert.equal(phraseRuns(obj,11,'Относно:').every(r=>r.bold&&r.italic),true,'whole label bold italic');
+  }
   assert.equal(phraseRuns(c,11,'„'+(mode==='Б'?'Обслужваща площадка':'Складови помещения')+'“').every(r=>r.bold&&r.italic),true,'subject title bold+italic');
   assert.ok(!c.txt(18).includes('ал. 1. от'));
   assert.ok(!e.txt(19).includes('ал. 1. от'));
@@ -101,6 +108,9 @@ async function run(){
    assert.ok(e.txt(25).includes('BG0001031 „Родопи – Средни“'));
    assert.ok(e.txt(33).includes('BG0001031 „Родопи – Средни“'));
    assert.ok(!e.txt(24).includes('попада изцяло или частично'));
+   assert.ok(e.txt(41).includes('компетентният орган приема, че не е необходимо провеждане на процедура'),'Expert B approved final authority voice');
+   assert.ok(!e.txt(41).includes('Предварителното мнение'),'Expert B no provisional AI opinion');
+   assert.ok(!e.txt(40).includes('проектен статус'),'Expert B no provisional legal assessment');
    const incomplete=phraseRuns(e,33,'попадане');assert.equal(incomplete.some(r=>r.bold),false,'inner word попадане must not be bold');
    if(zt)assert.ok(c.txt(11).includes('местност „Общия балкан“'),'confirmed B+ZT locality must be retained');
    if(!zt){

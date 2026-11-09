@@ -1,0 +1,23 @@
+name: KT79-20 Final Word Regression
+on:
+  push:
+    branches:
+      - fix/kt79-18-20-final-editorial
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  final-word:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Validate JS
+        run: node --check kt79-10-universal-word-gate.js && node --check kt79-10-universal-regression.cjs
+      - name: Verify 4 A/B synthetic cases and final Expert voice
+        run: node kt79-10-universal-regression.cjs
