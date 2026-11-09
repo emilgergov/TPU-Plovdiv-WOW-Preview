@@ -8,7 +8,7 @@ const NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main',enc=new 
 const CLASSIC='01_Proekt_na_stanovishte_Klasicheski.docx',EXPERT='02_Proekt_na_stanovishte_Eksperten.docx';
 const APPROVED23_TEXT='Инвестиционното предложение не е свързано с промяна предназначението и/или начина на трайно ползване на имота.';
 const APPROVED_B_END='е, че не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС.';
-function children(n,name){return [...(n?.childNodes||[])].filter(x=>x.nodeType===1&&x.namespaceURI===NS&&x.localName===name);}
+function children(n,name){return Array.from(n?.childNodes||[]).filter(x=>x.nodeType===1&&x.namespaceURI===NS&&x.localName===name);}
 function nodes(n,name){return Array.from(n.getElementsByTagNameNS(NS,name));}
 function paragraphs(doc){return children(nodes(doc,'body')[0],'p');}
 function text(p){return nodes(p,'t').map(x=>x.textContent||'').join('');}
