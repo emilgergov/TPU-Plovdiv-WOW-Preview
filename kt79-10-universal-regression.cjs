@@ -34,7 +34,7 @@ function content(data){
 function phraseRuns(o,i,phrase){
  let pos=0;return o.runs(o.ps[i-1]).filter(r=>{const a=pos;pos+=r.text.length;const full=o.txt(i),idx=full.indexOf(phrase);return idx>=0&&a<idx+phrase.length&&pos>idx;});
 }
-function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,multi=false,wrongSource=false}={}){
+function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,multi=false,aiConclusion=false,wrongSource=false}={}){
  const name=mode==='Б'?'Обслужваща площадка':'Складови помещения';
  const zone='BG0001031 „Родопи – Средни“';
  const h='Относно: Уведомление за инвестиционно предложение (ИП): „'+name+'“ в поземлен имот с идентификатор '+id+', населено място с. Примерно, община Тестова, област Примерна.';
@@ -53,7 +53,7 @@ function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,multi=
   p[25]=zt?
    'При извършената пространствена проверка е установено, че поземленият имот с идентификатор '+id+' попада в границите на природна забележителност „Свети Дух“.' :
    [{text:'При извършената пространствена проверка е установено, че поземленият имот с идентификатор '+id+' не '},{text:'попада',bold:true},{text:' в границите на защитени територии.'}];
-  p[34]='В тази връзка и на основание чл. 2, ал. 2 от Наредбата за ОС Ви уведомявам, че преценката на компетентния орган за така заявеното инвестиционно предложение: „'+name+'“ в поземлен имот с идентификатор '+id+' изисква проверка на заявените параметри, приложимите режими на '+zone+' и резултатите от пространствената проверка, преди определяне на окончателния процедурен извод.';
+  p[34]='В тази връзка и на основание чл. 2, ал. 2 от Наредбата за ОС Ви уведомявам, че преценката на компетентния орган за така заявеното инвестиционно предложение: „'+name+'“ в поземлен имот с идентификатор '+id+(aiConclusion?' е, че според AI следва да се проведе допълнителна процедура.':' изисква проверка на заявените параметри, приложимите режими на '+zone+' и резултатите от пространствената проверка, преди определяне на окончателния процедурен извод.');
   e[23]='Поземленият имот с идентификатор '+id+' попада изцяло или частично в границите на защитена зона BG0001031.';
   e[24]='Приложими са режимите на BG0001031.';
   e[25]=p[25];
@@ -76,8 +76,8 @@ function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,multi=
 }
 async function run(){
  let passes=0;
- for(const [mode,id,zt,multi] of [['А','12345.678.901',false,false],['Б','12345.678.901',false,false],['Б','98765.432.109',true,false],['Б','13579.246.810',false,true]]){
-  const sample=synthetic({mode,id,zt,duplicate:zt,multi});
+ for(const [mode,id,zt,multi,aiConclusion] of [['А','12345.678.901',false,false,false],['Б','12345.678.901',false,false,false],['Б','98765.432.109',true,false,false],['Б','13579.246.810',false,true,false],['Б','24680.135.709',true,false,true],['Б','24680.135.710',false,true,true]]){
+  const sample=synthetic({mode,id,zt,duplicate:zt,multi,aiConclusion});
   const result=await gate.fix(sample.blob);
   const out=zip.unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
   assert.deepEqual(Object.keys(out).sort(),Object.keys(sample.files).sort());
@@ -97,6 +97,8 @@ async function run(){
    assert.ok(c.txt(23).includes('не е свързано с промяна предназначението'));
    assert.ok(c.txt(35).endsWith('е, че не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС.'));
    assert.ok(!c.txt(35).includes('изисква проверка'));
+   assert.ok(!c.txt(35).includes('според AI'));
+   assert.ok(c.txt(35).includes(id),'locked B conclusion must retain current dossier parcel');
    assert.ok(e.txt(24).includes('BG0001031 „Родопи – Средни“'));
    assert.ok(e.txt(25).includes('BG0001031 „Родопи – Средни“'));
    assert.ok(e.txt(33).includes('BG0001031 „Родопи – Средни“'));
@@ -116,6 +118,6 @@ async function run(){
   }
   passes++;console.log('PASS',mode,zt?'B+ZT':'',id);
  }
- console.log('PASS KT79 universal synthetic regression',passes+'/4; arbitrary cadastral IDs including multi-parcel B; all non-DOCX files byte-identical');
+ console.log('PASS KT79 universal synthetic regression',passes+'/6; B cases with contradictory AI conclusions, including ZT and multiple parcels; other files immutable');
 }
 run().catch(e=>{console.error(e);process.exitCode=1});
