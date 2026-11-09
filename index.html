@@ -681,7 +681,7 @@ const kt77ImpactMissing=plan=>{
  const impacts=plan?.classic?.impactsProject;
  if(!Array.isArray(impacts)||impacts.length!==5)return [1,2,3,4,5];
  return impacts.map((x,i)=>({i:i+1,value:String(x??'').trim()}))
-   .filter(x=>!x.value||/\\[ЗА ЕКСПЕРТНА ПРОВЕРКА|\\[ЗА ПОПЪЛВАНЕ|\\[ОТКЪС ОТ ПРЕПИСКАТА|НЯМА ДАННИ/i.test(x.value))
+   .filter(x=>!x.value||/\[ЗА ЕКСПЕРТНА ПРОВЕРКА|\[ЗА ПОПЪЛВАНЕ|\[ОТКЪС ОТ ПРЕПИСКАТА|НЯМА ДАННИ/i.test(x.value))
    .map(x=>x.i);
 };
 let kt77MissingImpacts=kt77ImpactMissing(kt67Plan);
