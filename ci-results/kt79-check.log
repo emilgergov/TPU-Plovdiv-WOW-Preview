@@ -1,0 +1,7 @@
+PASS А  12345.678.901
+PASS Б  12345.678.901
+PASS Б B+ZT 98765.432.109
+PASS Б  13579.246.810
+PASS Б B+ZT 24680.135.709
+PASS Б  24680.135.710
+PASS KT79 universal synthetic regression 6/6; B cases with contradictory AI conclusions, including ZT and multiple parcels; other files immutable
