@@ -195,7 +195,7 @@ function processFile(bytes,{classic,zt}){
  for(const p of ps){
   const t=txt(p);
   const patterns=[...BOLD_PATTERNS];
-  if(/границите на|пространствената проверка|защитена зона/u.test(t)&&/попада/u.test(t))patterns.push(/\bпопада\b/gu);
+  if(/границите на|пространствената проверка|защитена зона/u.test(t)&&/попада/u.test(t))patterns.push(/попада(?!т)/gu);
   if(/пространствената проверка|границите на/u.test(t)&&/не попадат/u.test(t))patterns.push(/не попадат/gu);
   report.boldSegments+=boldRanges(p,patterns);
  }
