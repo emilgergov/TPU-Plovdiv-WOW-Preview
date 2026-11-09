@@ -100,6 +100,22 @@ function processFile(bytes,{classic,zt}){
   if(!p||!txt(p).includes('46989.205.218'))throw Error('KT79: third-case subject slot absent');
   fixParagraph(doc,p,[{text:'Относно: Уведомление за инвестиционно предложение (ИП): '},{text:'„Разполагане на малък посетителски информационен пункт“',bold:true},{text:' в поземлен имот с идентификатор 46989.205.218 по КККР на с. Манастир, местност „Общия балкан“, община Лъки, област Пловдив.',italic:true}]);
   report.edits.push('Classic B+ZT §11 unique subject');
+  // Preserve the existing non-final procedural statement; remove only
+  // the mechanically repeated subject + parcel/location substring.
+  const conclusion=ps.find(x=>txt(x).startsWith('В тази връзка и на основание чл. 2, ал. 2'));
+  if(conclusion&&txt(conclusion).includes('изисква проверка')){
+   const current=txt(conclusion),suffix=current.slice(current.indexOf('изисква проверка'));
+   if(!suffix.includes('46989.205.218')){
+     fixParagraph(doc,conclusion,[
+       {text:'В тази връзка и на основание чл. 2, ал. 2 от Наредбата за ОС Ви уведомявам, че преценката на компетентния орган за така заявеното инвестиционно предложение: '},
+       {text:'„Разполагане на малък посетителски информационен пункт“',bold:true},
+       {text:' в поземлен имот с идентификатор 46989.205.218 по КККР на с. Манастир, община Лъки, област Пловдив '},
+       {text:suffix}
+     ]);
+     report.edits.push('Classic B+ZT procedural subject de-duplicated; no conclusion invented');
+   }
+  }
+
   const desc=ps.find(x=>txt(x).startsWith('С инвестиционното предложение се предвижда'));
   if(desc&&/посетителски информационен пункт/iu.test(txt(desc))){
    const keepArea=/до\s+20\s*кв/iu.test(txt(desc));
