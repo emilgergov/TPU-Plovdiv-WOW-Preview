@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - fix/kt79-b-universal-conclusion
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 jobs:
   universal-word:
