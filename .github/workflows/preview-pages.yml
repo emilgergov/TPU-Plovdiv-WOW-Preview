@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: lightweight-preview-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -31,8 +31,10 @@ jobs:
           mkdir -p _site
           cp index.html _site/index.html
           cp kt77-15-classic-b-signature-pagination.js _site/kt77-15-classic-b-signature-pagination.js
+          cp kt77-18-verified-admin-bridge.js _site/kt77-18-verified-admin-bridge.js
           test -s _site/index.html
           test -s _site/kt77-15-classic-b-signature-pagination.js
+          test -s _site/kt77-18-verified-admin-bridge.js
           du -sh _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
