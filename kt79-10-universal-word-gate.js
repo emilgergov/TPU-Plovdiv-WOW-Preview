@@ -200,8 +200,8 @@ function standardizeClassicB(ps,report){
   const headingEnd=headingSubject<0?-1:headingText.indexOf('“',headingSubject+1);
   if(quoted<0||headingEnd<0||!/заявеното инвестиционно предложение:/u.test(old.slice(0,quoted)))
    throw Error('KT79: Classic B closing structure cannot be individualized');
-  const approvedLocation=headingText.slice(headingEnd+1).replace(/[.\\s]+$/u,'').trim();
-  if(!approvedLocation||!/\\d{5}\\.\\d+\\.\\d+/u.test(approvedLocation))
+  const approvedLocation=headingText.slice(headingEnd+1).replace(/[.\s]+$/u,'').trim();
+  if(!approvedLocation||!/\d{5}\.\d+\.\d+/u.test(approvedLocation))
    throw Error('KT79: Classic B closing location lacks verified parcel');
   const individualized='„'+subject[1]+'“ '+approvedLocation+' '+APPROVED_B_END;
   alter(para,quoted,old.length,individualized);
