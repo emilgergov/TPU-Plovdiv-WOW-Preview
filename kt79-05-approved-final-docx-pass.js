@@ -195,8 +195,13 @@ function processFile(bytes,{classic,zt}){
  for(const p of ps){
   const t=txt(p);
   const patterns=[...BOLD_PATTERNS];
-  if(/границите на|пространствената проверка|защитена зона/u.test(t)&&/попада/u.test(t))patterns.push(/попада(?!т)/gu);
-  if(/пространствената проверка|границите на/u.test(t)&&/не попадат/u.test(t))patterns.push(/не попадат/gu);
+  // Spatial relation is an indivisible semantic phrase.
+  // NEVER bold "попада" alone inside "не попада" or "не попадат".
+  if(/границите на|пространствената проверка|защитен[аи] зони?|защитени територии/u.test(t)){
+    if(/не\s+попадат/u.test(t))patterns.push(/не\s+попадат/gu);
+    else if(/не\s+попада/u.test(t))patterns.push(/не\s+попада/gu);
+    else if(/попада/u.test(t))patterns.push(/попада(?!т)/gu);
+  }
   report.boldSegments+=boldRanges(p,patterns);
  }
  // Machine acceptance: no output when an approved correction regresses.
