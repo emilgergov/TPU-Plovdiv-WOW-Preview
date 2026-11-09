@@ -1,0 +1,48 @@
+name: KT79 Universal Classic B Editorial Regression
+on:
+  push:
+    branches:
+      - fix/kt79-b-universal-conclusion
+    paths-ignore:
+      - ci-results/**
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  universal-word:
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test-only XML and ZIP dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Run and persist exact test outcome
+        shell: bash
+        run: |
+          mkdir -p ci-results
+          set +e
+          node --check kt79-10-universal-word-gate.js > ci-results/kt79-check.log 2>&1
+          S1=$?
+          node --check kt79-10-universal-regression.cjs >> ci-results/kt79-check.log 2>&1
+          S2=$?
+          node kt79-10-universal-regression.cjs >> ci-results/kt79-check.log 2>&1
+          S3=$?
+          printf 'commit=%s\nsyntax_adapter=%s\nsyntax_regression=%s\nfunctional=%s\n' "$GITHUB_SHA" "$S1" "$S2" "$S3" > ci-results/kt79-status.txt
+          cat ci-results/kt79-status.txt
+          cat ci-results/kt79-check.log
+          if [ "$S1" -ne 0 ] || [ "$S2" -ne 0 ] || [ "$S3" -ne 0 ]; then exit 1; fi
+      - name: Commit PASS evidence to isolated branch
+        if: success() && github.event_name == 'push'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci-results/kt79-status.txt ci-results/kt79-check.log
+          git commit -m "ci(KT79): record passing universal word regression" || exit 0
+          git push origin HEAD:fix/kt79-b-universal-conclusion
