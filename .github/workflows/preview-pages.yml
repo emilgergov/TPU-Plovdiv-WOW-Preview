@@ -72,6 +72,17 @@ jobs:
             actual=$(git hash-object "$filepath")
             test "$actual" = "$expected" || { echo "::error::Locked release changed: $filepath"; exit 1; }
           done < releases/v27.28/RELEASE_LOCK.gitblob
+          # V27.29 is pinned separately; it shares only locked V27.28 dependencies.
+          test -s releases/v27.29/index.html
+          test -s releases/v27.29/RELEASE_LOCK.gitblob
+          while read -r expected filepath; do
+            test -f "$filepath"
+            actual=$(git hash-object "$filepath")
+            test "$actual" = "$expected" || { echo "::error::V27.29 release changed: $filepath"; exit 1; }
+          done < releases/v27.29/RELEASE_LOCK.gitblob
+          grep -q '/releases/v27.29/assets/kt79-10-universal-word-gate.js' releases/v27.29/index.html
+          ! grep -q 'kt79-05-approved-final-docx-pass.js' releases/v27.29/index.html
+          node --check releases/v27.29/assets/kt79-10-universal-word-gate.js
           cp -R releases _site/releases
           python3 - <<'PY'
           from pathlib import Path
