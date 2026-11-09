@@ -1,0 +1,45 @@
+name: Lightweight WOW Preview Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '*.js'
+      - '.github/workflows/preview-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: lightweight-preview-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare only lightweight preview files
+        run: |
+          mkdir -p _site
+          cp index.html _site/index.html
+          cp kt77-15-classic-b-signature-pagination.js _site/kt77-15-classic-b-signature-pagination.js
+          test -s _site/index.html
+          test -s _site/kt77-15-classic-b-signature-pagination.js
+          du -sh _site
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload lightweight artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Deploy preview
+        id: deployment
+        uses: actions/deploy-pages@v4
