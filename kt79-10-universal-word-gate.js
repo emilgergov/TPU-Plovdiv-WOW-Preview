@@ -191,14 +191,23 @@ function standardizeClassicB(ps,report){
  let para=ps.find(p=>text(p).startsWith('В тази връзка и на основание чл. 2, ал. 2'));
  if(!para)throw Error('KT79: Classic B approved closing paragraph absent');
  const old=text(para);
- if(old.includes('изисква проверка')&&old.includes(subject[1])){
-  // The already accepted Scenario B conclusion is a locked, scenario-specific
-  // template phrase. ZZ/ZT must never select a different conclusion text.
-  const begin=old.indexOf('изисква проверка');
-  alter(para,begin,old.length,APPROVED_B_END);
-  report.edits.push('Classic B template conclusion aligned, including with ZT');
+ // Classic B has already been pre-screened for the approved legal scenario.
+ // AI-authored conclusions are NEVER authoritative: restore the locked result
+ // from the verified dossier heading rather than matching specific AI phrasing.
+ if(!old.endsWith(APPROVED_B_END)){
+  const quoted=old.indexOf('„');
+  const headingSubject=headingText.indexOf('„');
+  const headingEnd=headingSubject<0?-1:headingText.indexOf('“',headingSubject+1);
+  if(quoted<0||headingEnd<0||!/заявеното инвестиционно предложение:/u.test(old.slice(0,quoted)))
+   throw Error('KT79: Classic B closing structure cannot be individualized');
+  const approvedLocation=headingText.slice(headingEnd+1).replace(/[.\\s]+$/u,'').trim();
+  if(!approvedLocation||!/\\d{5}\\.\\d+\\.\\d+/u.test(approvedLocation))
+   throw Error('KT79: Classic B closing location lacks verified parcel');
+  const individualized='„'+subject[1]+'“ '+approvedLocation+' '+APPROVED_B_END;
+  alter(para,quoted,old.length,individualized);
+  report.edits.push('Classic B: AI conclusion replaced by approved B result and dossier-specific subject/location');
  }
- if(!text(para).includes(APPROVED_B_END))throw Error('KT79: Classic B conclusion differs from locked template');
+ if(!text(para).endsWith(APPROVED_B_END))throw Error('KT79: Classic B conclusion differs from locked template');
  setMatches(para,/„[^“]+“/gu,{bold:true});
  setMatches(para,/не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС\./gu,{bold:true});
  let p23=ps.find(p=>text(p)===APPROVED23_TEXT);
