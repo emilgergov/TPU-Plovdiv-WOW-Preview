@@ -32,9 +32,11 @@ jobs:
           cp index.html _site/index.html
           cp kt77-15-classic-b-signature-pagination.js _site/kt77-15-classic-b-signature-pagination.js
           cp kt77-18-verified-admin-bridge.js _site/kt77-18-verified-admin-bridge.js
+          cp kt77-21-classic-b-reference-consistent-guard.js _site/kt77-21-classic-b-reference-consistent-guard.js
           test -s _site/index.html
           test -s _site/kt77-15-classic-b-signature-pagination.js
           test -s _site/kt77-18-verified-admin-bridge.js
+          test -s _site/kt77-21-classic-b-reference-consistent-guard.js
           du -sh _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
