@@ -55,6 +55,14 @@ jobs:
           test -s _site/kt79-05-approved-final-docx-pass.js
           node --check _site/kt79-05-approved-final-docx-pass.js
           grep -q 'KT79FinalApproved.fix(kt7713.blob)' _site/index.html
+          cp kt79-10-universal-word-gate.js _site/kt79-10-universal-word-gate.js
+          test -s _site/kt79-10-universal-word-gate.js
+          node --check _site/kt79-10-universal-word-gate.js
+          # Test actual XML paragraph/run mutation on synthetic A/B/B+ZT packages.
+          mkdir -p /tmp/kt79-regression
+          npm install --prefix /tmp/kt79-regression --no-save --silent fflate@0.8.2 @xmldom/xmldom@0.8.12
+          NODE_PATH=/tmp/kt79-regression/node_modules node kt79-10-universal-regression.cjs
+          grep -q 'kt79-10-universal-word-gate.js' _site/index.html
           # V27.28 is a pinned release: publish ALL local runtime assets together.
           # Never alter the heavy WOW site: this is a separate small Pages artifact.
           test -s releases/v27.28/index.html
