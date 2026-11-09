@@ -49,7 +49,7 @@ function alter(p,a,b,replacement,style=null){
 }
 function replaceOnce(p,re,repl){
  const full=text(p);re.lastIndex=0;const m=re.exec(full);if(!m)return false;
- alter(p,m.index,m.index+m[0].length,repl);
+ alter(p,m.index,m.index+m[0].length,typeof repl==='function'?repl(m):repl);
  return true;
 }
 function setSpanStyle(p,a,b,style){
@@ -80,7 +80,7 @@ function setMatches(p,re,style){
 }
 function removeDuplicateParcels(p,report){
  const original=text(p);
- if(!/Относно: Уведомление|С инвестиционното предложение се предвижда/u.test(original))return;
+ if(!/Относно: Уведомление|С инвестиционното предложение се предвижда|В тази връзка и на основание/u.test(original))return;
  const re=/в поземлен(?:и имоти| имот)\s+с\s+идентификатор(?:и)?\s+(\d{5}\.\d+\.\d+)/gu;
  const m=[...original.matchAll(re)];
  if(m.length<2||m[0][1]!==m[1][1])return;
@@ -92,7 +92,7 @@ function removeDuplicateParcels(p,report){
  const replacementStart=original.slice(m[0].index,second).replace(/[\s.“]+$/u,'').trimEnd();
  const prefix=original.slice(0,m[0].index);
  const suffix=original.slice(end);
- const final=prefix+replacementStart+suffix;
+ const final=prefix+replacementStart+(suffix||(/[.]\s*$/u.test(original)?'.':''));
  if(!final.includes(m[0][1]))throw Error('KT79: parcel lost during duplicate cleanup');
  alter(p,0,original.length,final);
  report.edits.push('duplicate parcel occurrence removed without title substitution');
@@ -128,7 +128,7 @@ function normalizeFacts(p,facts,report){
  for(const paired of facts.zones){
   const code=paired.slice(0,9);
   const re=new RegExp(code+'(?!\\s*„)','gu');
-  if(replaceOnce(p,re,paired))report.edits.push('confirmed full ZZ code and name');
+  for(let guard=0;guard<10&&replaceOnce(p,re,paired);guard++)report.edits.push('confirmed full ZZ code and name');
  }
 }
 function semanticSpans(p,report){
@@ -163,6 +163,7 @@ function standardizeClassicB(ps,report){
   report.edits.push('Classic B template conclusion aligned, including with ZT');
  }
  if(!text(para).includes(APPROVED_B_END))throw Error('KT79: Classic B conclusion differs from locked template');
+ setMatches(para,/„[^“]+“/gu,{bold:true});
  setMatches(para,/не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС\./gu,{bold:true});
  let p23=ps.find(p=>text(p)===APPROVED23_TEXT);
  if(!p23){
@@ -184,7 +185,7 @@ function fixOne(raw,{classic,facts}){
   removeDuplicateParcels(p,report);
   if(/Относно: Уведомление/u.test(text(p)))heading(p,report);
   if(replaceOnce(p,/чл\.\s*10,\s*ал\.\s*1\.\s+от/gu,'чл. 10, ал. 1 от'))report.edits.push('legal citation punctuation');
-  if(replaceOnce(p,/(?<=\d{5}\.\d+\.\d+)(?=не\s+попада)/gu,' '))report.edits.push('GIS parcel spacing');
+  if(replaceOnce(p,/\d{5}\.\d+\.\d+(?=не\s+попада)/gu,m=>m[0]+' '))report.edits.push('GIS parcel spacing');
   if(replaceOnce(p,/2018 г\.\./gu,'2018 г.'))report.edits.push('ZT punctuation');
   if(!classic)normalizeFacts(p,facts,report);
   if(!classic&&/пространствен|защитена зона/u.test(text(p))&&/попада изцяло или частично/u.test(text(p))){
