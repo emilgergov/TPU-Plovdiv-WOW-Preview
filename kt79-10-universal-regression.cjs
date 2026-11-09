@@ -37,7 +37,7 @@ function phraseRuns(o,i,phrase){
 function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,multi=false,aiConclusion=false,wrongSource=false}={}){
  const name=mode==='Б'?'Обслужваща площадка':'Складови помещения';
  const zone='BG0001031 „Родопи – Средни“';
- const h='Относно: Уведомление за инвестиционно предложение (ИП): „'+name+'“ в поземлен имот с идентификатор '+id+', населено място с. Примерно, община Тестова, област Примерна.';
+ const h='Относно: Уведомление за инвестиционно предложение (ИП): „'+name+'“ '+(multi?'в поземлени имоти с идентификатори '+id+', 12345.678.999':'в поземлен имот с идентификатор '+id)+', населено място с. Примерно, община Тестова, област Примерна.';
  const p=Array.from({length:mode==='Б'?44:42},()=>''),e=Array.from({length:50},()=> '');
  p[10]=mode==='А'?
   'Относно: Уведомление за инвестиционно предложение (ИП): „'+name+'“ в поземлени имоти с идентификатори '+id+', 12345.678.902, 12345.678.903, населено място гр. Примерно, община Тестова, област Примерна, местност РОГОШКО ШОСЕ-СЕВЕР.' :
@@ -99,6 +99,7 @@ async function run(){
    assert.ok(!c.txt(35).includes('изисква проверка'));
    assert.ok(!c.txt(35).includes('според AI'));
    assert.ok(c.txt(35).includes(id),'locked B conclusion must retain current dossier parcel');
+   if(multi)assert.ok(c.txt(35).includes('12345.678.999'),'locked B conclusion must include second parcel from verified heading');
    assert.ok(e.txt(24).includes('BG0001031 „Родопи – Средни“'));
    assert.ok(e.txt(25).includes('BG0001031 „Родопи – Средни“'));
    assert.ok(e.txt(33).includes('BG0001031 „Родопи – Средни“'));
