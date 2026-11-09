@@ -54,6 +54,26 @@ function replaceAcrossTextRuns(p,pattern,replacement){
  }
  return true;
 }
+function preserveSpaceBeforeNegativeGIS(p){
+ const nodes=[...p.getElementsByTagNameNS(NS,'t')], values=nodes.map(x=>x.textContent||'');
+ const whole=values.join('');
+ // Only remedy a missing separator after the LAST cadastral identifier.
+ // Never replace paragraph, XML run properties or any substantive words.
+ const m=/(\d{5}\.\d+\.\d+)(не\s+попада(?:т)?)(?=\s|$)/u.exec(whole);
+ if(!m)return false;
+ const insertAt=m.index+m[1].length;
+ let pos=0;
+ for(let i=0;i<nodes.length;i++){
+   const value=values[i],end=pos+value.length;
+   if(insertAt<=end){
+     const local=insertAt-pos;
+     nodes[i].textContent=value.slice(0,local)+' '+value.slice(local);
+     return true;
+   }
+   pos=end;
+ }
+ throw Error('KT79: negative GIS separator could not be restored');
+}
 function boldRanges(p,patterns){
  let matches=[];const full=txt(p);
  for(const re of patterns){re.lastIndex=0;for(const m of full.matchAll(re))if(m[0])matches.push([m.index,m.index+m[0].length]);}
@@ -193,6 +213,7 @@ function processFile(bytes,{classic,zt}){
   }
  }
  for(const p of ps){
+  if(preserveSpaceBeforeNegativeGIS(p))report.edits.push('GIS negative relation: missing separator restored');
   const t=txt(p);
   const patterns=[...BOLD_PATTERNS];
   // Spatial relation is an indivisible semantic phrase.
@@ -203,6 +224,10 @@ function processFile(bytes,{classic,zt}){
     else if(/попада/u.test(t))patterns.push(/попада(?!т)/gu);
   }
   report.boldSegments+=boldRanges(p,patterns);
+ }
+ // Prevent visual ambiguity in negative cadastral statements.
+ for(const p of ps){
+   if(/\d{5}\.\d+\.\d+не\s+попада(?:т)?/u.test(txt(p)))throw Error('KT79 QA: missing space before negative GIS relation');
  }
  // Machine acceptance: no output when an approved correction regresses.
  if(classic&&hasA){
