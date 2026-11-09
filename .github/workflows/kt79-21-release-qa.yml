@@ -1,0 +1,37 @@
+name: KT79-21 Release Quality Gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'releases/v27.31/**'
+      - 'kt79-21-final-regression.cjs'
+      - '.github/workflows/kt79-21-release-qa.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  release-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Verify V27.31 lock
+        shell: bash
+        run: |
+          test -s releases/v27.31/index.html
+          while read -r hash file; do
+            test "$(git hash-object "$file")" = "$hash" || exit 1
+          done < releases/v27.31/RELEASE_LOCK.gitblob
+          grep -q '/releases/v27.31/assets/kt79-10-universal-word-gate.js' releases/v27.31/index.html
+          node --check releases/v27.31/assets/kt79-10-universal-word-gate.js
+      - name: Test final headings and Expert B from locked release
+        shell: bash
+        run: |
+          mkdir -p /tmp/kt79-21
+          cp releases/v27.31/assets/kt79-10-universal-word-gate.js /tmp/kt79-21/kt79-10-universal-word-gate.js
+          cp kt79-21-final-regression.cjs /tmp/kt79-21/kt79-10-universal-regression.cjs
+          (cd /tmp/kt79-21 && NODE_PATH="$GITHUB_WORKSPACE/node_modules" node kt79-10-universal-regression.cjs)
