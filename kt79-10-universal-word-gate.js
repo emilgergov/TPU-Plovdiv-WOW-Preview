@@ -101,11 +101,12 @@ function heading(p,report){
  const t=text(p);if(!t.startsWith('Относно: Уведомление'))return;
  const subject=t.match(/„[^“]+“/u);
  if(!subject)throw Error('KT79: unparseable approved subject heading');
- setSpanStyle(p,0,'Относно'.length,{bold:true,italic:true});
- setSpanStyle(p,'Относно'.length,subject.index,{italic:true});
+ // Reset inherited style across the whole paragraph, then apply only the
+ // two approved bold+italic spans. The intervening descriptor is NOT bold.
+ setSpanStyle(p,0,t.length,{bold:false,italic:true});
+ setSpanStyle(p,0,'Относно:'.length,{bold:true,italic:true});
  setSpanStyle(p,subject.index,subject.index+subject[0].length,{bold:true,italic:true});
- setSpanStyle(p,subject.index+subject[0].length,t.length,{bold:false,italic:true});
- report.edits.push('subject heading exact approved bold/italic');
+ report.edits.push('approved heading: only label and quoted subject bold; entire paragraph italic');
 }
 function acceptedLocality(raw){
  const value=String(raw||'').replace(/[„“]/gu,'').trim();
@@ -223,6 +224,9 @@ function fixOne(raw,{classic,facts,expertLocality=null}){
   if(/Относно: Уведомление/u.test(text(p)))heading(p,report);
   if(replaceOnce(p,/чл\.\s*10,\s*ал\.\s*1\.\s+от/gu,'чл. 10, ал. 1 от'))report.edits.push('legal citation punctuation');
   if(replaceOnce(p,/\d{5}\.\d+\.\d+(?=не\s+попада)/gu,m=>m[0]+' '))report.edits.push('GIS parcel spacing');
+  // Fix missing whitespace around complete cadastral identifiers only.
+  for(let n=0;n<20&&replaceOnce(p,/(\\d{5}\\.\\d+\\.\\d+)(?=[А-Яа-я])/u,m=>m[1]+' ');n++)report.edits.push('space after cadastral ID');
+  for(let n=0;n<20&&replaceOnce(p,/([А-Яа-я])(?=\\d{5}\\.\\d+\\.\\d+)/u,m=>m[1]+' ');n++)report.edits.push('space before cadastral ID');
   if(replaceOnce(p,/2018 г\.\./gu,'2018 г.'))report.edits.push('ZT punctuation');
   if(!classic)normalizeFacts(p,facts,report);
   if(!classic&&/пространствен|защитена зона/u.test(text(p))&&/попада изцяло или частично/u.test(text(p))){
