@@ -33,14 +33,26 @@ function fixParagraph(doc,p,segments){
 function replaceAcrossTextRuns(p,pattern,replacement){
  const runs=[...p.getElementsByTagNameNS(NS,'r')];
  const chunks=runs.map(r=>({r,nodes:[...r.getElementsByTagNameNS(NS,'t')]})).filter(x=>x.nodes.length===1);
- const all=chunks.map(x=>x.nodes[0].textContent||'').join('');
- if(!pattern.test(all))return false;
- const result=all.replace(pattern,replacement);
- // Only typography, punctuation or an explicitly approved phrase: keep
- // existing individual run styles where a one-run substitution is possible.
- if(chunks.length===1){chunks[0].nodes[0].textContent=result;return true;}
- // For multi-run replacements fall back to a single run, without altering pPr.
- const doc=p.ownerDocument;fixParagraph(doc,p,[{text:result}]);return true;
+ let pos=0;for(const c of chunks){c.start=pos;c.value=c.nodes[0].textContent||'';pos+=c.value.length;c.end=pos;}
+ const all=chunks.map(x=>x.value).join('');
+ pattern.lastIndex=0;
+ const matches=[...all.matchAll(pattern)];
+ if(!matches.length)return false;
+ // Preserve all original w:r properties, including mixed bold and italic
+ // within the paragraph. Move a matched cross-run phrase into its first run.
+ for(const m of matches.reverse()){
+   const a=m.index,b=a+m[0].length;
+   const target=chunks.find(x=>x.start<=a&&x.end>a);
+   if(!target)throw Error('KT79: replacement split over unsupported DOCX structure');
+   for(const c of chunks){
+     if(c.end<=a||c.start>=b)continue;
+     let before=c.value.slice(0,Math.max(0,a-c.start));
+     let after=c.value.slice(Math.max(0,b-c.start));
+     c.value=before+(c===target?replacement:'')+after;
+     c.nodes[0].textContent=c.value;
+   }
+ }
+ return true;
 }
 function boldRanges(p,patterns){
  let matches=[];const full=txt(p);
@@ -95,6 +107,21 @@ function processFile(bytes,{classic,zt}){
  if(hasA&&!classic){for(const p of ps)if(/РОГОШКО ШОСЕ.СЕВЕР/iu.test(txt(p))){
   if(replaceAcrossTextRuns(p,/РОГОШКО ШОСЕ\s*[-–]\s*СЕВЕР/giu,'Рогошко шосе - север'))report.edits.push('Expert A locality');
  }}
+
+ if(classic&&hasA){
+  const p18=ps.find(x=>txt(x).includes('приложение № 1 към чл. 10, ал. 1.'));
+  if(p18){replaceAcrossTextRuns(p18,/чл\. 10, ал\. 1\. от/gu,'чл. 10, ал. 1 от');report.edits.push('Classic A §18 punctuation');}
+  const p32=ps.find(x=>txt(x).startsWith('Въздействие на предложените дейности'));
+  if(p32){
+   fixParagraph(doc,p32,[{text:'Въздействия, произтичащи от предложените дейности, самостоятелно или във взаимодействие с други инвестиционни предложения, планове, програми и проекти.'}]);
+   report.edits.push('Classic A §32 approved wording');
+  }
+  const p35=ps.find(x=>txt(x).startsWith('При всички случаи на промяна в параметрите ИП'));
+  if(p35){
+   replaceAcrossTextRuns(p35,/При всички случаи на промяна в параметрите ИП/gu,'При промяна в параметрите на ИП');
+   report.edits.push('Classic A §35 approved wording');
+  }
+ }
  if(classic&&hasThird){
   const p=ps[10];
   if(!p||!txt(p).includes('46989.205.218'))throw Error('KT79: third-case subject slot absent');
@@ -121,6 +148,23 @@ function processFile(bytes,{classic,zt}){
    const keepArea=/до\s+20\s*кв/iu.test(txt(desc));
    fixParagraph(doc,desc,[{text:'С инвестиционното предложение се предвижда разполагане на малък посетителски информационен пункт в поземлен имот с идентификатор 46989.205.218 по КККР на с. Манастир, местност „Общия балкан“, община Лъки, област Пловдив.'+(keepArea?' В представеното уведомление е посочена приблизителна застроена площ до 20 кв. м.':'')}]);
    report.edits.push('Classic B+ZT description no duplicated title');
+  }
+ }
+
+ if(classic&&hasThird){
+  for(const p of ps){
+   if(/близко разположената защитена зона/u.test(txt(p))){
+    replaceAcrossTextRuns(p,/близко разположената защитена зона/gu,'засегнатата защитена зона');
+    report.edits.push('Classic B+ZT impacts: affected zone');
+   }
+   if(/близко разположени зони/u.test(txt(p))){
+    replaceAcrossTextRuns(p,/близко разположени зони/gu,'засегнатата защитена зона');
+    report.edits.push('Classic B+ZT impacts: affected zone plural');
+   }
+   if(txt(p).startsWith('Въздействие на предложените дейности')){
+    fixParagraph(doc,p,[{text:'въздействия, произтичащи от предвидените дейности, самостоятелно или във взаимодействие с други инвестиционни предложения, планове, програми и проекти.'}]);
+    report.edits.push('Classic B+ZT cumulative impacts aligned with approved B template');
+   }
   }
  }
  if(classic&&hasB){
