@@ -1,0 +1,20 @@
+name: KT79 Universal Classic B Editorial Regression
+on:
+  push:
+    branches:
+      - fix/kt79-b-universal-conclusion
+  workflow_dispatch:
+jobs:
+  universal-word:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test-only XML and ZIP dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Syntax validation
+        run: node --check kt79-10-universal-word-gate.js && node --check kt79-10-universal-regression.cjs
+      - name: Test pre-screened A/B editorial corrections
+        run: node kt79-10-universal-regression.cjs
