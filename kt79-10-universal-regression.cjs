@@ -23,11 +23,11 @@ function docx(paras){
 }
 function content(data){
  const doc=new DOMParser().parseFromString(dec.decode(zip.unzipSync(data)['word/document.xml']),'application/xml');
- const ps=[...doc.getElementsByTagNameNS(N,'body')[0].childNodes].filter(e=>e.nodeType===1&&e.localName==='p');
- const runs=p=>[...p.getElementsByTagNameNS(N,'r')].map(r=>({
-   text:[...r.getElementsByTagNameNS(N,'t')].map(t=>t.textContent||'').join(''),
-   bold:[...r.getElementsByTagNameNS(N,'b')].some(b=>b.getAttributeNS(N,'val')!=='0'),
-   italic:[...r.getElementsByTagNameNS(N,'i')].some(b=>b.getAttributeNS(N,'val')!=='0')
+ const ps=Array.from(doc.getElementsByTagNameNS(N,'body')[0].childNodes).filter(e=>e.nodeType===1&&e.localName==='p');
+ const runs=p=>Array.from(p.getElementsByTagNameNS(N,'r')).map(r=>({
+   text:Array.from(r.getElementsByTagNameNS(N,'t')).map(t=>t.textContent||'').join(''),
+   bold:Array.from(r.getElementsByTagNameNS(N,'b')).some(b=>b.getAttributeNS(N,'val')!=='0'),
+   italic:Array.from(r.getElementsByTagNameNS(N,'i')).some(b=>b.getAttributeNS(N,'val')!=='0')
  }));
  return {ps,runs,txt:i=>runs(ps[i-1]).map(x=>x.text).join('')};
 }
