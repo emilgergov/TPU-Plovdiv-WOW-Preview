@@ -107,6 +107,41 @@ function heading(p,report){
  setSpanStyle(p,subject.index+subject[0].length,t.length,{bold:false,italic:true});
  report.edits.push('subject heading exact approved bold/italic');
 }
+function acceptedLocality(raw){
+ const value=String(raw||'').replace(/[„“]/gu,'').trim();
+ const known={'РОГОШКО ШОСЕ-СЕВЕР':'Рогошко шосе - север','РОГОШКО ШОСЕ – СЕВЕР':'Рогошко шосе - север','ОБЩИЯ БАЛКАН':'Общия балкан'};
+ return known[value]||value;
+}
+function acceptedClassicEdits(p,report,expertLocality){
+ const before=text(p);
+ if(before.startsWith('Относно:')&&/населено място\s+(?:гр\.|с\.)/u.test(before)){
+  const subject=before.match(/„[^“]+“/u), ids=[...before.matchAll(/\d{5}\.\d+\.\d+/gu)].map(m=>m[0]);
+  const settlement=(before.match(/населено място\s+((?:гр\.|с\.)\s*[^,]+)/u)||[])[1];
+  const municipality=(before.match(/община\s+([^,]+)/u)||[])[1];
+  const region=(before.match(/област\s+([^,]+)/u)||[])[1];
+  const locality=(before.match(/местност\s+([^,.]+)/u)||[])[1];
+  if(subject&&ids.length>1&&settlement&&municipality&&region&&locality){
+   const cleanIds=[...new Set(ids)];
+   const listing=cleanIds.length===2?cleanIds.join(' и '):cleanIds.slice(0,-1).join(', ')+' и '+cleanIds.at(-1);
+   const titleEnd=subject.index+subject[0].length;
+   const newHeading=before.slice(0,titleEnd)+' в поземлени имоти с идентификатори '+listing+
+    ' по КККР на '+settlement+', местност „'+acceptedLocality(locality)+'“, община '+municipality.trim()+', област '+region.trim()+'.';
+   if(newHeading!==before){alter(p,0,before.length,newHeading);report.edits.push('Classic A verified cadastral heading mapped to approved structure');}
+  }
+ }
+ if(before.startsWith('Относно:')&&expertLocality&&!/местност\s+„/u.test(text(p))&&/по КККР на (?:с\.|гр\.)\s*[^,]+,/u.test(text(p))){
+  replaceOnce(p,/по КККР на ((?:с\.|гр\.)\s*[^,]+),/u,m=>'по КККР на '+m[1]+', местност „'+acceptedLocality(expertLocality)+'“,');
+  report.edits.push('Confirmed locality inserted from corresponding dossier source');
+ }
+ if(text(p).startsWith('Въздействие на предложените дейности')){
+  alter(p,0,text(p).length,'Въздействия, произтичащи от предложените дейности, самостоятелно или във взаимодействие с други инвестиционни предложения, планове, програми и проекти.');
+  report.edits.push('approved cumulative impact wording A');
+ }
+ if(text(p).startsWith('При всички случаи на промяна в параметрите ИП')){
+  replaceOnce(p,/При всички случаи на промяна в параметрите ИП/u,'При промяна в параметрите на ИП');
+  report.edits.push('approved amendment notification wording A');
+ }
+}
 function safeAdminFromClassic(ps){
  const line=ps.find(p=>text(p).startsWith('Относно:'));if(!line)return null;
  const t=text(line),m=t.match(/община\s+([^,]+),\s*област\s+([^,.]+)/u);
@@ -174,7 +209,7 @@ function standardizeClassicB(ps,report){
  }
  setSpanStyle(p23,0,text(p23).length,{bold:true});
 }
-function fixOne(raw,{classic,facts}){
+function fixOne(raw,{classic,facts,expertLocality=null}){
  const z=root.fflate.unzipSync(raw),old=z['word/document.xml'];
  if(!old)throw Error('KT79: missing document.xml');
  const doc=new DOMParser().parseFromString(dec.decode(old),'application/xml');
@@ -183,6 +218,7 @@ function fixOne(raw,{classic,facts}){
  const isB=classic&&ps.some(p=>/^Имотът, предмет на инвестиционното предложение/u.test(text(p))&&/попада/u.test(text(p)));
  for(const p of ps){
   removeDuplicateParcels(p,report);
+  if(classic)acceptedClassicEdits(p,report,expertLocality);
   if(/Относно: Уведомление/u.test(text(p)))heading(p,report);
   if(replaceOnce(p,/чл\.\s*10,\s*ал\.\s*1\.\s+от/gu,'чл. 10, ал. 1 от'))report.edits.push('legal citation punctuation');
   if(replaceOnce(p,/\d{5}\.\d+\.\d+(?=не\s+попада)/gu,m=>m[0]+' '))report.edits.push('GIS parcel spacing');
@@ -211,7 +247,11 @@ async function fix(blob){
  const outer=root.fflate.unzipSync(new Uint8Array(await blob.arrayBuffer()));
  if(!outer[CLASSIC]||!outer[EXPERT])throw Error('KT79: missing original Word documents');
  const originalKeys=Object.keys(outer).sort();
- const c=fixOne(outer[CLASSIC],{classic:true,facts:null});
+ const sourceExpert=outer[EXPERT];
+ const expertXml=new DOMParser().parseFromString(dec.decode(root.fflate.unzipSync(sourceExpert)['word/document.xml']),'application/xml');
+ const expertTitle=paragraphs(expertXml).find(p=>text(p).startsWith('Относно:'));
+ const expertLocality=expertTitle?(text(expertTitle).match(/местност\s+([^,.]+)/u)||[])[1]:null;
+ const c=fixOne(outer[CLASSIC],{classic:true,facts:null,expertLocality});
  const facts=safeAdminFromClassic(c.ps);
  const e=fixOne(outer[EXPERT],{classic:false,facts});
  outer[CLASSIC]=c.binary;outer[EXPERT]=e.binary;
