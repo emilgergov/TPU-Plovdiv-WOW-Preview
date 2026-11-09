@@ -1,0 +1,29 @@
+name: KT79-22 Pinned Release Regression
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  pinned-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Verify pinned V27.32 release
+        run: |
+          test -s releases/v27.32/index.html
+          while read -r hash path; do
+            test "$(git hash-object "$path")" = "$hash" || exit 1
+          done < releases/v27.32/RELEASE_LOCK.gitblob
+          grep -q '/releases/v27.32/assets/kt79-10-universal-word-gate.js' releases/v27.32/index.html
+          node --check releases/v27.32/assets/kt79-10-universal-word-gate.js
+      - name: Run 6 scenario tests on exact published release asset
+        run: |
+          mkdir -p /tmp/v2732
+          cp releases/v27.32/assets/kt79-10-universal-word-gate.js /tmp/v2732/kt79-10-universal-word-gate.js
+          cp kt79-22-final-regression.cjs /tmp/v2732/kt79-10-universal-regression.cjs
+          (cd /tmp/v2732 && NODE_PATH="$GITHUB_WORKSPACE/node_modules" node kt79-10-universal-regression.cjs)
