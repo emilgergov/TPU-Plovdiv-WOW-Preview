@@ -25,7 +25,7 @@ function alter(p,a,b,replacement,style=null){
  const original=nodes(p,'r').filter(r=>children(r,'t').length===1),parts=[];
  let at=0;
  for(const run of original){const t=children(run,'t')[0],value=t.textContent||'',lo=at,hi=lo+value.length;at=hi;
-  if(!value.length||hi<=a||lo>=b){parts.push({run,lo,hi});continue;}
+  if(!value.length||hi<=a||lo>=b){parts.push({run:run.cloneNode(true),lo,hi});continue;}
   const first=Math.max(lo,a),last=Math.min(hi,b);
   const left=value.slice(0,first-lo),right=value.slice(last-lo);
   let before=null,after=null;
