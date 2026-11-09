@@ -644,12 +644,14 @@ if(!kt67Plan.readyForIntegration){
  const detail=kt67Plan.issues.map(i=>i.code+(i.section?' / '+i.section:'')).join('; ');
  throw Error('КТ67-2: AI авторът не е подготвил пълноценни индивидуални абзаци: '+detail+'. Не се заместват с общи текстове.');
 }
+let kt77LegalRetried=false;
 let kt6722Legal=window.KT6722LegalQuality?.inspect(kt67Plan);
 if(!kt6722Legal)throw Error('КТ67-2.2: липсва контролът за правни и тематични твърдения.');
 // KT76-05 R2 — a legal-QA failure can trigger ONE fresh AI generation.
 // Only a completely revalidated alternative is ever allowed into the ZIP.
 // No weakening or bypassing KT67-2.2, and no invented procedural outcome.
 if(!kt6722Legal.ok&&kt7605RetryAuthor&&kt6722Legal.issues.every(i=>i.code==='UNSUPPORTED_CATEGORICAL_OS'||i.code==='UNSOURCED_PROCEDURE_INFERENCE')){
+ kt77LegalRetried=true;
  setStatus('КТ76-05: правният контрол отхвърли първата AI чернова. Изготвя се едно ново авторско предложение с повторна пълна проверка.');
  try{
    const candidate=await kt7605RetryAuthor();
@@ -672,6 +674,41 @@ if(!kt6722Legal.ok&&kt7605RetryAuthor&&kt6722Legal.issues.every(i=>i.code==='UNS
 }
 if(!kt6722Legal.ok)throw Error('КТ67-2.2: AI проектът съдържа неподкрепено правно заключение или разменени направления: '+kt6722Legal.issues.map(x=>x.code+(x.position?' / '+x.position:'')+(x.section?' ['+x.section+']':'')+(x.excerpt?' — „'+x.excerpt+'“':'')).join('; ')+'. Не се подписва и не се подменя с общ текст.');
 if(kt6722Legal.warnings?.length)console.warn('КТ67-2.3: направления за експертна проверка (не са автоматично разменени):',kt6722Legal.warnings);
+/* KT77-19: KT42 and KT67 must agree BEFORE DOCX creation.
+ * Never fabricate impact assessments or bypass legal/GIS checks.
+ * Attempt one full re-authoring only if the legal retry was not already used. */
+const kt77ImpactMissing=plan=>{
+ const impacts=plan?.classic?.impactsProject;
+ if(!Array.isArray(impacts)||impacts.length!==5)return [1,2,3,4,5];
+ return impacts.map((x,i)=>({i:i+1,value:String(x??'').trim()}))
+   .filter(x=>!x.value||/\\[ЗА ЕКСПЕРТНА ПРОВЕРКА|\\[ЗА ПОПЪЛВАНЕ|\\[ОТКЪС ОТ ПРЕПИСКАТА|НЯМА ДАННИ/i.test(x.value))
+   .map(x=>x.i);
+};
+let kt77MissingImpacts=kt77ImpactMissing(kt67Plan);
+if(kt77MissingImpacts.length&&kt7605RetryAuthor&&!kt77LegalRetried){
+ setStatus('КТ77-19: AI черновата съдържа непроверени направления '+kt77MissingImpacts.join(', ')+'. Изготвя се едно ново авторско предложение с всички проверки.');
+ try{
+  const candidate=await kt7605RetryAuthor();
+  const retryCase=window.KT603Evidence?.build({results:found,workingDraft,aiDraft:candidate,evidence:kt60QualityEvidence,normativeRegister:window.V26NormativeRegister});
+  if(!retryCase||retryCase.scenario!==kt60.scenario)throw Error('ГИС сценарият е променен');
+  const retryPlan=window.KT67AIContent.plan(candidate,{
+   parcelIds:found.map(x=>String(x.input||x.cadnum).trim()),gisScenario:retryCase.scenario,
+   sourceFacts:kt60QualityEvidence?.facts||[],
+   verifiedLegalSources:window.V27VerifiedContext?.legal?.(window.V26NormativeRegister)?.sources||[]
+  });
+  if(!retryPlan.readyForIntegration)throw Error('непълни AI раздели: '+retryPlan.issues.map(x=>x.code).join(', '));
+  const retryLegal=window.KT6722LegalQuality.inspect(retryPlan);
+  if(!retryLegal?.ok)throw Error('неприет правен контрол: '+retryLegal.issues.map(x=>x.code).join(', '));
+  const stillMissing=kt77ImpactMissing(retryPlan);
+  if(stillMissing.length)throw Error('непроверени направления '+stillMissing.join(', '));
+  v27AiDraft=candidate;kt60=retryCase;kt67Plan=retryPlan;kt6722Legal=retryLegal;
+  kt77MissingImpacts=[];
+  console.info('KT77-19: complete AI draft accepted after independent impact and legal checks');
+ }catch(e){
+  throw Error('КТ77-19: КТ42 не допуска оценки по направления '+kt77MissingImpacts.join(', ')+'. Повторният AI текст не премина проверките: '+String(e?.message||e)+'. Не е издаден ZIP.');
+ }
+}
+if(kt77MissingImpacts.length)throw Error('КТ77-19: липсва проверена AI оценка за направления '+kt77MissingImpacts.join(', ')+'. Не е издаден ZIP.');
 if(!window.KT6722CaseNormalize?.normalize)throw Error('КТ67-2.2: липсва нормализаторът на променливите данни.');
 workingDraft=window.KT6722CaseNormalize.normalize({
  paragraphs:kt67Plan.classic.characterization,
