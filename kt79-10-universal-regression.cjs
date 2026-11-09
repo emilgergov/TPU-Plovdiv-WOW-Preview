@@ -98,6 +98,7 @@ async function run(){
    assert.ok(c.txt(35).endsWith('е, че не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС.'));
    assert.ok(!c.txt(35).includes('изисква проверка'));
    assert.ok(!c.txt(35).includes('според AI'));
+   assert.equal((c.txt(35).match(/не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС/g)||[]).length,1,'one and only one locked B conclusion');
    assert.ok(c.txt(35).includes(id),'locked B conclusion must retain current dossier parcel');
    if(multi)assert.ok(c.txt(35).includes('12345.678.999'),'locked B conclusion must include second parcel from verified heading');
    assert.ok(e.txt(24).includes('BG0001031 „Родопи – Средни“'));
