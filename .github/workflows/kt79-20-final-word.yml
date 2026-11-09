@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - fix/kt79-18-20-final-editorial
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 jobs:
   final-word:
