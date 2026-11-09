@@ -1356,4 +1356,26 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 <script src="v27-preview/kt77-04-4c-pdf1-context-labels-only.js?v=kt77-044c-1"></script>
 <script src="v27-preview/kt77-04-4a-multi-context-red-points.js?v=kt77-044a-1"></script>
 <script src="v27-preview/kt77-r11-archive-acceptance.js?v=r11-archive-check-01"></script><script src="v27-preview/kt77-06-6-zt-word-normal-identifiers.js?v=kt77-12-unified-ZZ-ZT-style"></script>
-<script src="/TPU-Plovdiv-WOW-Preview/kt77-15-classic-b-signature-pagination.js?v=kt77-16-preview-01"></script><script src="/TPU-Plovdiv-WOW-Preview/kt77-18-verified-admin-bridge.js?v=kt77-20-r02"></script><script src="/TPU-Plovdiv-WOW-Preview/kt77-21-classic-b-reference-consistent-guard.js?v=kt77-21-r01"></script></body></html>
+<script src="/TPU-Plovdiv-WOW-Preview/kt77-15-classic-b-signature-pagination.js?v=kt77-16-preview-01"></script><script src="/TPU-Plovdiv-WOW-Preview/kt77-18-verified-admin-bridge.js?v=kt77-20-r02"></script><script src="/TPU-Plovdiv-WOW-Preview/kt77-21-classic-b-reference-consistent-guard.js?v=kt77-21-r01"></script><script id="kt77-22-ai-impact-count-retry">
+/* KT77-22 — single supplementary *full* AI author request only for the
+   Cloudflare author's exact structural 422: IMPACTS_COUNT 5/6.
+   Never synthesize, split, or reclassify impact paragraphs locally.
+   The original Worker and all client/Word/legal QA must still pass. */
+(function(root){'use strict';
+ const api=root.V27AIAuthor;
+ if(!api||typeof api.generate!=='function'){console.error('KT77-22: AI author client missing');return;}
+ const base=api.generate.bind(api);
+ async function generate(payload,token){
+  try{return await base(payload,token);}
+  catch(err){
+   const message=String(err?.message||err);
+   if(!/HTTP\s*422\b/.test(message)||!/IMPACTS_COUNT\s+5\/6\b/.test(message))throw err;
+   console.warn('KT77-22: supplementary full author request after IMPACTS_COUNT 5/6; original QA unchanged');
+   // A fresh full response must still pass the strict Worker validators.
+   // One bounded retry; if it fails, propagate the actual structural error.
+   return base(payload,token);
+  }
+ }
+ root.V27AIAuthor=Object.freeze({...api,generate});
+})(window);
+</script></body></html>
