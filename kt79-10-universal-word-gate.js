@@ -211,7 +211,42 @@ function standardizeClassicB(ps,report){
  }
  setSpanStyle(p23,0,text(p23).length,{bold:true});
 }
-function fixOne(raw,{classic,facts,expertLocality=null}){
+function expertBEditorial(ps,report){
+ // The legal result comes exclusively from the pre-screened Classic B variant.
+ // The AI author's preliminary conclusions are not allowed to override it.
+ const headingText=text(ps.find(p=>text(p).startsWith('Относно:'))||ps[10]);
+ const subject=(headingText.match(/„[^“]+“/u)||[])[0];
+ if(!subject)throw Error('KT79: missing Expert B subject');
+ const approved={
+  'По отношение на законовата уредба няма предоставени':'При преценката са съобразени приложимите режими по Закона за биологичното разнообразие, Закона за защитените територии и Закона за опазване на околната среда, установеното пространствено положение и заявените параметри на инвестиционното предложение. Не са използвани непотвърдени нормативни основания.',
+  'С оглед досегашната проверка':'Установеното пресичане със защитена зона и защитена територия е отчетено като фактическо обстоятелство при индивидуалната преценка. Самото пространствено пресичане не предопределя необходимостта от отделна процедура.',
+  'За индивидуалната процедурна преценка следва':'При индивидуалната преценка са отчетени характерът на заявените дейности, пространствените отношения и представените технически данни. Непотвърдени технически параметри не са използвани като доказани обстоятелства.',
+  'Към фактическите обстоятелства, подлежащи на проверка':'Съобразени са сведенията по преписката за заявените дейности, инженерното осигуряване и приложимите режими за защитената зона. Недоказаните факти не са включени като основания за правния извод.',
+  'Оценката на въздействието върху околната среда, приложима':'При преценката на вероятните въздействия са съобразени характерът на дейностите, установеното пресичане със защитена зона и защитена територия и възможните преки, косвени и съвкупни въздействия. Пресичането само по себе си не удостоверява значително отрицателно въздействие.',
+  'Сред природните местообитания, характерни':'В представените материали не са индивидуализирани конкретни природни местообитания, пряко засегнати в границите на имота. От наличието на пространствено пресичане не се извежда недоказано засягане на тип местообитание.',
+  'За видовете, включително защитени':'По отношение на видовете, предмет на опазване, преписката не индивидуализира конкретни находища или местообитания в имота. Възможните въздействия са съобразени с характера и интензивността на заявените дейности, без да се предполага наличие на непотвърдени видове.',
+  'Целостта на защитената зона и постигането':'Съобразени са целостта и целите на опазване на засегнатата защитена зона. Кадастралното пресичане не удостоверява само по себе си увреждане на целостта на зоната.',
+  'Относно свързаността на обекта с природните мрежи':'Разгледана е възможността за засягане на екологични връзки. Представените материали не индивидуализират конкретни прекъснати коридори или миграционни маршрути в имота и такива не се приемат за установени.',
+  'Кумулативните въздействия на инвестиционното предложение':'Съобразени са наличните по преписката данни за други планове, проекти и инвестиционни предложения. При липса на проверени конкретни данни за други дейности не се твърди установен значим съвкупен ефект.'
+ };
+ for(const p of ps){
+  const t=text(p);
+  const entry=Object.entries(approved).find(([prefix])=>t.startsWith(prefix));
+  if(entry){alter(p,0,t.length,entry[1]);report.edits.push('Expert B approved institutional evidence wording');}
+ }
+ const sec=ps.findIndex(p=>text(p).startsWith('4. ПРЕЦЕНКА НА КОМПЕТЕНТНИЯ ОРГАН'));
+ if(sec<0||!ps[sec+1]||!ps[sec+2])throw Error('KT79: Expert B decision section missing');
+ const decision='Въз основа на заявените параметри на инвестиционното предложение, извършения ГИС анализ и относимите нормативни основания компетентният орган извърши индивидуална преценка по чл. 2, ал. 2 от Наредбата за ОС. Установеното пространствено пресичане е отчетено, без само по себе си да предопределя процедурния извод.';
+ const conclusion='В тази връзка за инвестиционното предложение '+subject+' компетентният орган приема, че не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС.';
+ for(const [p,value] of [[ps[sec+1],decision],[ps[sec+2],conclusion]]){
+  if(text(p)!==value){alter(p,0,text(p).length,value);report.edits.push('Expert B definitive competent-authority conclusion');}
+ }
+ // Confirm no AI tentative conclusion survived in the two terminal paragraphs.
+ if(/Предварителното мнение|Настоящият проектен статус|не предрешава/u.test(text(ps[sec+1])+' '+text(ps[sec+2])))
+  throw Error('KT79: Expert B tentative conclusion survived');
+ for(const p of ps)semanticSpans(p,report);
+}
+function fixOne(raw,{classic,facts,expertLocality=null,expertB=false}){
  const z=root.fflate.unzipSync(raw),old=z['word/document.xml'];
  if(!old)throw Error('KT79: missing document.xml');
  const doc=new DOMParser().parseFromString(dec.decode(old),'application/xml');
@@ -236,6 +271,7 @@ function fixOne(raw,{classic,facts,expertLocality=null}){
   semanticSpans(p,report);
  }
  if(isB)standardizeClassicB(ps,report);
+ if(!classic&&expertB)expertBEditorial(ps,report);
  // A final negative spatial statement must not have a bolded positive fragment.
  for(const p of ps){
   const t=text(p);
@@ -258,7 +294,8 @@ async function fix(blob){
  const expertLocality=expertTitle?(text(expertTitle).match(/местност\s+([^,.]+)/u)||[])[1]:null;
  const c=fixOne(outer[CLASSIC],{classic:true,facts:null,expertLocality});
  const facts=safeAdminFromClassic(c.ps);
- const e=fixOne(outer[EXPERT],{classic:false,facts});
+ const scenarioB=c.ps.some(p=>/^(?:Имотът|Имотите), предмет на инвестиционното предложение/u.test(text(p))&&/попада(?:т)?\\s+(?:частично\\s+|изцяло\\s+)?в границите на защитена зона/u.test(text(p)));
+ const e=fixOne(outer[EXPERT],{classic:false,facts,expertB:scenarioB});
  outer[CLASSIC]=c.binary;outer[EXPERT]=e.binary;
  if(JSON.stringify(Object.keys(outer).sort())!==JSON.stringify(originalKeys))throw Error('KT79: ZIP files changed');
  const bytes=root.fflate.zipSync(outer,{level:6});
