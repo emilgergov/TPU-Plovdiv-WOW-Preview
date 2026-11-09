@@ -51,6 +51,10 @@ jobs:
           cp kt79-01-classic-b-paragraph-23.js _site/kt79-01-classic-b-paragraph-23.js
           test -s _site/kt79-01-classic-b-paragraph-23.js
           node --check _site/kt79-01-classic-b-paragraph-23.js
+          cp kt79-05-approved-final-docx-pass.js _site/kt79-05-approved-final-docx-pass.js
+          test -s _site/kt79-05-approved-final-docx-pass.js
+          node --check _site/kt79-05-approved-final-docx-pass.js
+          grep -q 'KT79FinalApproved.fix(kt7713.blob)' _site/index.html
           # V27.28 is a pinned release: publish ALL local runtime assets together.
           # Never alter the heavy WOW site: this is a separate small Pages artifact.
           test -s releases/v27.28/index.html
