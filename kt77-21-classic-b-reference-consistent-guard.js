@@ -48,7 +48,7 @@ async function verify(blob,options={}){
  const ref=await source();
  const different=immutable.filter(i=>text(current[i-1])!==text(ref.paragraphs[i-1]));
  if(different.length)throw Error('КТ77-21: изменени заключени абзаци '+different.join(', ')+'. ZIP не е създаден.');
- const missing=editable.filter(i=>!text(current[i-1]).trim()||/\\[\\[|\\[ЗА ЕКСПЕРТНА ПРОВЕРКА|ПРЕДСТОИ/iu.test(text(current[i-1])));
+ const missing=editable.filter(i=>!text(current[i-1]).trim()||/\[\[|\[ЗА ЕКСПЕРТНА ПРОВЕРКА|ПРЕДСТОИ/iu.test(text(current[i-1])));
  if(missing.length)throw Error('КТ77-21: липсват допустими променливи абзаци '+missing.join(', '));
  const heading=text(current[10]);
  if(ids.some(id=>!heading.includes(id)))throw Error('КТ77-21: липсва потвърден ПИ в заглавието');
