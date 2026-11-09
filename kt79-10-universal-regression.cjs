@@ -50,12 +50,12 @@ function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,wrongS
   p[24]='Защитена зона '+zone+' за опазване на природните местообитания е обявена със заповед.';
   p[25]=zt?
    'При извършената пространствена проверка е установено, че поземленият имот с идентификатор '+id+' попада в границите на природна забележителност „Свети Дух“.' :
-   'При извършената пространствена проверка е установено, че поземленият имот с идентификатор '+id+' не попада в границите на защитени територии.';
+   [{text:'При извършената пространствена проверка е установено, че поземленият имот с идентификатор '+id+' не '},{text:'попада',bold:true},{text:' в границите на защитени територии.'}];
   p[34]='В тази връзка и на основание чл. 2, ал. 2 от Наредбата за ОС Ви уведомявам, че преценката на компетентния орган за така заявеното инвестиционно предложение: „'+name+'“ в поземлен имот с идентификатор '+id+' изисква проверка на заявените параметри, приложимите режими на '+zone+' и резултатите от пространствената проверка, преди определяне на окончателния процедурен извод.';
   e[23]='Поземленият имот с идентификатор '+id+' попада изцяло или частично в границите на защитена зона BG0001031.';
   e[24]='Приложими са режимите на BG0001031.';
   e[25]=p[25];
-  e[32]='Изводът за пространствено попадане на имота се прави с оглед на BG0001031.';
+  e[32]=[{text:'Изводът за пространствено '},{text:'попада',bold:true},{text:'не на имота се прави с оглед на BG0001031.'}];
  }else{
   p[22]='Поземленият имот с идентификатор '+id+' не попада в границите на защитени зони.';
   p[24]='Поземленият имот с идентификатор '+id+'не попада в границите на защитени територии.';
@@ -73,7 +73,7 @@ function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,wrongS
 async function run(){
  let passes=0;
  for(const [mode,id,zt] of [['А','12345.678.901',false],['Б','12345.678.901',false],['Б','98765.432.109',true]]){
-  const sample=synthetic({mode,id,zt});
+  const sample=synthetic({mode,id,zt,duplicate:zt});
   const result=await gate.fix(sample.blob);
   const out=zip.unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
   assert.deepEqual(Object.keys(out).sort(),Object.keys(sample.files).sort());
@@ -82,6 +82,7 @@ async function run(){
   const e=content(out['02_Proekt_na_stanovishte_Eksperten.docx']);
   assert.ok(c.txt(11).includes(id),'subject must retain exact arbitrary cadastral identifier');
   assert.ok(c.txt(11).includes('Тестова'),'subject must retain input municipality');
+  if(zt)assert.equal((c.txt(11).match(new RegExp(id.replaceAll('.','\\.'),'g'))||[]).length,1,'duplicated parcel in heading forbidden');
   assert.equal(phraseRuns(c,11,'Относно').every(r=>r.bold&&r.italic),true,'heading bold and italic');
   assert.equal(phraseRuns(c,11,'„'+(mode==='Б'?'Обслужваща площадка':'Складови помещения')+'“').every(r=>r.bold&&r.italic),true,'subject title bold+italic');
   assert.ok(!c.txt(18).includes('ал. 1. от'));
