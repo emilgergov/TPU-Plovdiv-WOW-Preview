@@ -100,7 +100,7 @@ function processFile(bytes,{classic,zt}){
  if(classic&&hasA){
   const p=ps[10];
   if(p&&/РОГОШКО ШОСЕ.СЕВЕР/iu.test(txt(p))){
-   fixParagraph(doc,p,[{text:'Относно: Уведомление за инвестиционно предложение (ИП): '},{text:'„Складове за промишлени стоки и офиси“',bold:true},{text:' в поземлени имоти с идентификатори 56784.13.102, 56784.13.105 и 56784.13.106 по КККР на гр. Пловдив, местност „Рогошко шосе - север“, община Пловдив, област Пловдив.',italic:true}]);
+   fixParagraph(doc,p,[{text:'Относно',bold:true,italic:true},{text:': Уведомление за инвестиционно предложение (ИП): ',italic:true},{text:'„Складове за промишлени стоки и офиси“',bold:true,italic:true},{text:' в поземлени имоти с идентификатори 56784.13.102, 56784.13.105 и 56784.13.106 по КККР на гр. Пловдив, местност „Рогошко шосе - север“, община Пловдив, област Пловдив.',italic:true}]);
    report.edits.push('Classic A §11 locality');
   }
  }
@@ -125,7 +125,7 @@ function processFile(bytes,{classic,zt}){
  if(classic&&hasThird){
   const p=ps[10];
   if(!p||!txt(p).includes('46989.205.218'))throw Error('KT79: third-case subject slot absent');
-  fixParagraph(doc,p,[{text:'Относно: Уведомление за инвестиционно предложение (ИП): '},{text:'„Разполагане на малък посетителски информационен пункт“',bold:true},{text:' в поземлен имот с идентификатор 46989.205.218 по КККР на с. Манастир, местност „Общия балкан“, община Лъки, област Пловдив.',italic:true}]);
+  fixParagraph(doc,p,[{text:'Относно',bold:true,italic:true},{text:': Уведомление за инвестиционно предложение (ИП): ',italic:true},{text:'„Разполагане на малък посетителски информационен пункт“',bold:true,italic:true},{text:' в поземлен имот с идентификатор 46989.205.218 по КККР на с. Манастир, местност „Общия балкан“, община Лъки, област Пловдив.',italic:true}]);
   report.edits.push('Classic B+ZT §11 unique subject');
   // Preserve the existing non-final procedural statement; remove only
   // the mechanically repeated subject + parcel/location substring.
@@ -135,7 +135,7 @@ function processFile(bytes,{classic,zt}){
    if(!suffix.includes('46989.205.218')){
      fixParagraph(doc,conclusion,[
        {text:'В тази връзка и на основание чл. 2, ал. 2 от Наредбата за ОС Ви уведомявам, че преценката на компетентния орган за така заявеното инвестиционно предложение: '},
-       {text:'„Разполагане на малък посетителски информационен пункт“',bold:true},
+       {text:'„Разполагане на малък посетителски информационен пункт“',bold:true,italic:true},
        {text:' в поземлен имот с идентификатор 46989.205.218 по КККР на с. Манастир, община Лъки, област Пловдив '},
        {text:suffix}
      ]);
