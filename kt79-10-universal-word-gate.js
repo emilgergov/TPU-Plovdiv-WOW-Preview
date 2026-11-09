@@ -260,8 +260,8 @@ function fixOne(raw,{classic,facts,expertLocality=null,expertB=false}){
   if(replaceOnce(p,/чл\.\s*10,\s*ал\.\s*1\.\s+от/gu,'чл. 10, ал. 1 от'))report.edits.push('legal citation punctuation');
   if(replaceOnce(p,/\d{5}\.\d+\.\d+(?=не\s+попада)/gu,m=>m[0]+' '))report.edits.push('GIS parcel spacing');
   // Fix missing whitespace around complete cadastral identifiers only.
-  for(let n=0;n<20&&replaceOnce(p,/(\\d{5}\\.\\d+\\.\\d+)(?=[А-Яа-я])/u,m=>m[1]+' ');n++)report.edits.push('space after cadastral ID');
-  for(let n=0;n<20&&replaceOnce(p,/([А-Яа-я])(?=\\d{5}\\.\\d+\\.\\d+)/u,m=>m[1]+' ');n++)report.edits.push('space before cadastral ID');
+  for(let n=0;n<20&&replaceOnce(p,/(\d{5}\.\d+\.\d+)(?=[А-Яа-я])/u,m=>m[1]+' ');n++)report.edits.push('space after cadastral ID');
+  for(let n=0;n<20&&replaceOnce(p,/([А-Яа-я])(?=\d{5}\.\d+\.\d+)/u,m=>m[1]+' ');n++)report.edits.push('space before cadastral ID');
   if(replaceOnce(p,/2018 г\.\./gu,'2018 г.'))report.edits.push('ZT punctuation');
   if(!classic)normalizeFacts(p,facts,report);
   if(!classic&&/пространствен|защитена зона/u.test(text(p))&&/попада изцяло или частично/u.test(text(p))){
@@ -294,7 +294,7 @@ async function fix(blob){
  const expertLocality=expertTitle?(text(expertTitle).match(/местност\s+([^,.]+)/u)||[])[1]:null;
  const c=fixOne(outer[CLASSIC],{classic:true,facts:null,expertLocality});
  const facts=safeAdminFromClassic(c.ps);
- const scenarioB=c.ps.some(p=>/^(?:Имотът|Имотите), предмет на инвестиционното предложение/u.test(text(p))&&/попада(?:т)?\\s+(?:частично\\s+|изцяло\\s+)?в границите на защитена зона/u.test(text(p)));
+ const scenarioB=c.ps.some(p=>/^(?:Имотът|Имотите), предмет на инвестиционното предложение/u.test(text(p))&&/попада(?:т)?\s+(?:частично\s+|изцяло\s+)?в границите на защитена зона/u.test(text(p)));
  const e=fixOne(outer[EXPERT],{classic:false,facts,expertB:scenarioB});
  outer[CLASSIC]=c.binary;outer[EXPERT]=e.binary;
  if(JSON.stringify(Object.keys(outer).sort())!==JSON.stringify(originalKeys))throw Error('KT79: ZIP files changed');
