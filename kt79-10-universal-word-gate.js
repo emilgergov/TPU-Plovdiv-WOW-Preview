@@ -175,7 +175,7 @@ function semanticSpans(p,report){
   report.bold+=setMatches(p,/(?<![\p{L}\p{N}])не\s+попада(?:т)?(?![\p{L}\p{N}])/gu,{bold:true});
   // A standalone positive "попада" is never a substring of "не попада".
   const s=text(p);
-  for(const m of s.matchAll(/(?<![\p{L}\p{N}])попада(?![\p{L}\p{N}])/gu)){
+  for(const m of s.matchAll(/(?<![\p{L}\p{N}])попада(?:т)?(?![\p{L}\p{N}])/gu)){
    const before=s.slice(Math.max(0,m.index-5),m.index);
    if(/не\s+$/u.test(before))continue;
    setSpanStyle(p,m.index,m.index+m[0].length,{bold:true});report.bold++;
@@ -216,7 +216,7 @@ function fixOne(raw,{classic,facts,expertLocality=null}){
  const doc=new DOMParser().parseFromString(dec.decode(old),'application/xml');
  if(doc.getElementsByTagName('parsererror').length)throw Error('KT79: corrupt Word XML');
  const ps=paragraphs(doc),report={paragraphs:ps.length,edits:[],bold:0,fixedWords:0};
- const isB=classic&&ps.some(p=>/^Имотът, предмет на инвестиционното предложение/u.test(text(p))&&/попада/u.test(text(p)));
+ const isB=classic&&ps.some(p=>/^(?:Имотът|Имотите), предмет на инвестиционното предложение/u.test(text(p))&&/попада(?:т)?\s+(?:частично\s+|изцяло\s+)?в границите на защитена зона/u.test(text(p)));
  for(const p of ps){
   removeDuplicateParcels(p,report);
   if(classic)acceptedClassicEdits(p,report,expertLocality);
