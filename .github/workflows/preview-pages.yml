@@ -48,6 +48,9 @@ jobs:
           test -s _site/kt77-24-pdf2-compact-renderer.js
           cp kt77-24-ai-gis-factual-guard.js _site/kt77-24-ai-gis-factual-guard.js
           test -s _site/kt77-24-ai-gis-factual-guard.js
+          cp kt79-01-classic-b-paragraph-23.js _site/kt79-01-classic-b-paragraph-23.js
+          test -s _site/kt79-01-classic-b-paragraph-23.js
+          node --check _site/kt79-01-classic-b-paragraph-23.js
           # V27.28 is a pinned release: publish ALL local runtime assets together.
           # Never alter the heavy WOW site: this is a separate small Pages artifact.
           test -s releases/v27.28/index.html
