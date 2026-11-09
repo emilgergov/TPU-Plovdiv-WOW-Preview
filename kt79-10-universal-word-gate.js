@@ -6,7 +6,6 @@
 (function(root){'use strict';
 const NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main',enc=new TextEncoder(),dec=new TextDecoder();
 const CLASSIC='01_Proekt_na_stanovishte_Klasicheski.docx',EXPERT='02_Proekt_na_stanovishte_Eksperten.docx';
-const APPROVED23='Инвестиционното предложение не е свързано с промя предназначението и/или начина на трайно ползване на имота.';
 const APPROVED23_TEXT='Инвестиционното предложение не е свързано с промяна предназначението и/или начина на трайно ползване на имота.';
 const APPROVED_B_END='е, че не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС.';
 function children(n,name){return [...(n?.childNodes||[])].filter(x=>x.nodeType===1&&x.namespaceURI===NS&&x.localName===name);}
@@ -79,6 +78,25 @@ function setMatches(p,re,style){
  const t=text(p),ranges=[...t.matchAll(re)].map(m=>[m.index,m.index+m[0].length]);for(const [a,b] of ranges)setSpanStyle(p,a,b,style);
  return ranges.length;
 }
+function removeDuplicateParcels(p,report){
+ const original=text(p);
+ if(!/Относно: Уведомление|С инвестиционното предложение се предвижда/u.test(original))return;
+ const re=/в поземлен(?:и имоти| имот)\s+с\s+идентификатор(?:и)?\s+(\d{5}\.\d+\.\d+)/gu;
+ const m=[...original.matchAll(re)];
+ if(m.length<2||m[0][1]!==m[1][1])return;
+ // Keep the first real cadastral/location block and preserve a distinct area sentence.
+ // Only remove the repeated parcel/location sequence; no new data are invented.
+ const second=m[1].index;
+ const endSentence=original.indexOf(' В представеното уведомление',second);
+ const end=endSentence>=0?endSentence:original.length;
+ const replacementStart=original.slice(m[0].index,second).replace(/[\s.“]+$/u,'').trimEnd();
+ const prefix=original.slice(0,m[0].index);
+ const suffix=original.slice(end);
+ const final=prefix+replacementStart+suffix;
+ if(!final.includes(m[0][1]))throw Error('KT79: parcel lost during duplicate cleanup');
+ alter(p,0,original.length,final);
+ report.edits.push('duplicate parcel occurrence removed without title substitution');
+}
 function heading(p,report){
  const t=text(p);if(!t.startsWith('Относно: Уведомление'))return;
  const subject=t.match(/„[^“]+“/u);
@@ -146,8 +164,13 @@ function standardizeClassicB(ps,report){
  }
  if(!text(para).includes(APPROVED_B_END))throw Error('KT79: Classic B conclusion differs from locked template');
  setMatches(para,/не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС\./gu,{bold:true});
- const p23=ps.find(p=>text(p)===APPROVED23_TEXT);
- if(!p23)throw Error('KT79: mandatory approved Classic B land-use paragraph missing');
+ let p23=ps.find(p=>text(p)===APPROVED23_TEXT);
+ if(!p23){
+   p23=ps.find(p=>/За евентуална промяна на предназначението/u.test(text(p)));
+   if(!p23)throw Error('KT79: mandatory approved Classic B land-use paragraph missing');
+   alter(p23,0,text(p23).length,APPROVED23_TEXT);
+   report.edits.push('mandatory approved Classic B paragraph 23 restored generically');
+ }
  setSpanStyle(p23,0,text(p23).length,{bold:true});
 }
 function fixOne(raw,{classic,facts}){
@@ -158,9 +181,10 @@ function fixOne(raw,{classic,facts}){
  const ps=paragraphs(doc),report={paragraphs:ps.length,edits:[],bold:0,fixedWords:0};
  const isB=classic&&ps.some(p=>/^Имотът, предмет на инвестиционното предложение/u.test(text(p))&&/попада/u.test(text(p)));
  for(const p of ps){
+  removeDuplicateParcels(p,report);
   if(/Относно: Уведомление/u.test(text(p)))heading(p,report);
   if(replaceOnce(p,/чл\.\s*10,\s*ал\.\s*1\.\s+от/gu,'чл. 10, ал. 1 от'))report.edits.push('legal citation punctuation');
-  if(replaceOnce(p,/(\d{5}\.\d+\.\d+)(?=не\s+попада)/gu,'$1 '))report.edits.push('GIS parcel spacing');
+  if(replaceOnce(p,/(?<=\d{5}\.\d+\.\d+)(?=не\s+попада)/gu,' '))report.edits.push('GIS parcel spacing');
   if(replaceOnce(p,/2018 г\.\./gu,'2018 г.'))report.edits.push('ZT punctuation');
   if(!classic)normalizeFacts(p,facts,report);
   if(!classic&&/пространствен|защитена зона/u.test(text(p))&&/попада изцяло или частично/u.test(text(p))){
