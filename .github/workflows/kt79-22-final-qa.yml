@@ -1,0 +1,27 @@
+name: KT79-22 Universal B and Editorial Regression
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  final-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies
+        run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Verify V27.32 assets
+        run: |
+          test -s releases/v27.32/index.html
+          grep -q '/releases/v27.32/assets/kt79-10-universal-word-gate.js' releases/v27.32/index.html
+          node --check releases/v27.32/assets/kt79-10-universal-word-gate.js
+          node --check kt79-22-final-regression.cjs
+      - name: Run six A/B scenarios, Expert and heading style
+        run: |
+          mkdir -p /tmp/kt79-22
+          cp releases/v27.32/assets/kt79-10-universal-word-gate.js /tmp/kt79-22/kt79-10-universal-word-gate.js
+          cp kt79-22-final-regression.cjs /tmp/kt79-22/kt79-10-universal-regression.cjs
+          (cd /tmp/kt79-22 && NODE_PATH="$GITHUB_WORKSPACE/node_modules" node kt79-10-universal-regression.cjs)
