@@ -129,9 +129,10 @@ function acceptedClassicEdits(p,report,expertLocality){
    if(newHeading!==before){alter(p,0,before.length,newHeading);report.edits.push('Classic A verified cadastral heading mapped to approved structure');}
   }
  }
- if(before.startsWith('Относно:')&&expertLocality&&!/местност\s+„/u.test(text(p))&&/по КККР на (?:с\.|гр\.)\s*[^,]+,/u.test(text(p))){
-  replaceOnce(p,/по КККР на ((?:с\.|гр\.)\s*[^,]+),/u,m=>'по КККР на '+m[1]+', местност „'+acceptedLocality(expertLocality)+'“,');
-  report.edits.push('Confirmed locality inserted from corresponding dossier source');
+ if(before.startsWith('Относно:')&&expertLocality&&!/местност\s+„/u.test(text(p))){
+  let inserted=replaceOnce(p,/по КККР на ((?:с\.|гр\.)\s*[^,]+),/u,m=>'по КККР на '+m[1]+', местност „'+acceptedLocality(expertLocality)+'“,');
+  if(!inserted)inserted=replaceOnce(p,/населено място ((?:с\.|гр\.)\s*[^,]+),\s*община/u,m=>'населено място '+m[1]+', местност „'+acceptedLocality(expertLocality)+'“, община');
+  if(inserted)report.edits.push('Confirmed locality inserted from corresponding dossier source');
  }
  if(text(p).startsWith('Въздействие на предложените дейности')){
   alter(p,0,text(p).length,'Въздействия, произтичащи от предложените дейности, самостоятелно или във взаимодействие с други инвестиционни предложения, планове, програми и проекти.');
