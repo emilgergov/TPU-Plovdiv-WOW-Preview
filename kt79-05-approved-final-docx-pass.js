@@ -199,6 +199,20 @@ function processFile(bytes,{classic,zt}){
   if(/пространствената проверка|границите на/u.test(t)&&/не попадат/u.test(t))patterns.push(/не попадат/gu);
   report.boldSegments+=boldRanges(p,patterns);
  }
+ // Machine acceptance: no output when an approved correction regresses.
+ if(classic&&hasA){
+   if(!txt(ps[10]).includes('Рогошко шосе - север'))throw Error('KT79 QA: Classic A locality failed');
+   if(ps.some(p=>txt(p).includes('При всички случаи на промяна в параметрите ИП')))throw Error('KT79 QA: Classic A §35 wording');
+ }
+ if(classic&&hasThird){
+   const head=txt(ps[10]);
+   if((head.match(/46989\.205\.218/g)||[]).length!==1||!head.includes('„Разполагане на малък посетителски информационен пункт“'))throw Error('KT79 QA: duplicate third-case subject');
+   if(!ps.some(p=>txt(p)===APPROVED))throw Error('KT79 QA: Classic B §23 wording');
+   if(ps.some(p=>txt(p).includes('2018 г..')))throw Error('KT79 QA: double ZT punctuation');
+   const conclusion=ps.find(p=>txt(p).startsWith('В тази връзка и на основание чл. 2, ал. 2'));
+   if(!conclusion||(txt(conclusion).match(/46989\.205\.218/g)||[]).length!==1)throw Error('KT79 QA: duplicate or missing procedural parcel');
+ }
+ if(classic&&hasB&&!ps.some(p=>txt(p)===APPROVED))throw Error('KT79 QA: mandatory Classic B §23 absent');
  zip['word/document.xml']=enc.encode(new XMLSerializer().serializeToString(doc));
  return {data:root.fflate.zipSync(zip,{level:6}),report};
 }
