@@ -43,6 +43,10 @@ jobs:
           test -s _site/kt77-23-pdf2-verified-metadata.js
           cp kt77-23-ai-institutional-style-guard.js _site/kt77-23-ai-institutional-style-guard.js
           test -s _site/kt77-23-ai-institutional-style-guard.js
+          cp kt77-24-pdf2-compact-renderer.js _site/kt77-24-pdf2-compact-renderer.js
+          test -s _site/kt77-24-pdf2-compact-renderer.js
+          cp kt77-24-ai-gis-factual-guard.js _site/kt77-24-ai-gis-factual-guard.js
+          test -s _site/kt77-24-ai-gis-factual-guard.js
           du -sh _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
