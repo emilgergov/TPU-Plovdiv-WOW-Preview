@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - '*.js'
+      - 'releases/**'
       - '.github/workflows/preview-pages.yml'
   workflow_dispatch:
 
@@ -47,6 +48,31 @@ jobs:
           test -s _site/kt77-24-pdf2-compact-renderer.js
           cp kt77-24-ai-gis-factual-guard.js _site/kt77-24-ai-gis-factual-guard.js
           test -s _site/kt77-24-ai-gis-factual-guard.js
+          # V27.28 is a pinned release: publish ALL local runtime assets together.
+          # Never alter the heavy WOW site: this is a separate small Pages artifact.
+          test -s releases/v27.28/index.html
+          test -s releases/v27.28/RELEASE_LOCK.gitblob
+          while read -r expected filepath; do
+            test -f "$filepath"
+            actual=$(git hash-object "$filepath")
+            test "$actual" = "$expected" || { echo "::error::Locked release changed: $filepath"; exit 1; }
+          done < releases/v27.28/RELEASE_LOCK.gitblob
+          cp -R releases _site/releases
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('_site/releases/v27.28/index.html').read_text()
+          base='<base href="https://emilgergov.github.io/TPU-Plovdiv-WOW-2.0/v26-test/">'
+          assert base in html, 'Base URL must point at pre-existing stable WOW data'
+          refs=re.findall(r'src="(/TPU-Plovdiv-WOW-Preview/releases/v27[.]28/assets/[^"]+)',html)
+          assert len(refs)==8, f'Expected 8 pinned release JS references, got {len(refs)}'
+          for ref in refs:
+              relative=ref.split('?',1)[0].removeprefix('/TPU-Plovdiv-WOW-Preview/')
+              assert Path('_site',relative).is_file(), f'Missing release dependency {relative}'
+          print('PASS: 8/8 versioned runtime dependencies present')
+          PY
+          for script in _site/releases/v27.28/assets/*.js; do node --check "$script"; done
+          test "$(du -sb _site | awk '{print $1}')" -lt 5242880 || { echo "::error::Lightweight Pages bundle is unexpectedly larger than 5 MB"; exit 1; }
           du -sh _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
