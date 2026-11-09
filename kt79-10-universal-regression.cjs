@@ -1,0 +1,110 @@
+/* Offline structural regression for KT79-10 universal Word adapter.
+   Uses SYNTHETIC dossiers with invented IDs solely to prove no parcel-ID branching.
+   Never treats fictional dossiers as authoritative legal/GIS evidence. */
+'use strict';
+const assert=require('node:assert/strict'), fs=require('node:fs'),vm=require('node:vm');
+const {DOMParser,XMLSerializer}=require('@xmldom/xmldom');
+const zip=require('fflate');
+const enc=new TextEncoder(),dec=new TextDecoder();
+const script=fs.readFileSync('kt79-10-universal-word-gate.js','utf8');
+const window={fflate:zip};
+vm.runInNewContext(script,{window,DOMParser,XMLSerializer,TextEncoder,TextDecoder,Blob,console});
+const gate=window.KT79FinalApproved;
+assert.equal(typeof gate.fix,'function');
+const N='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+function xmlParagraph(s,runs=null){
+ const chunks=runs||[{text:s}];
+ return '<w:p>'+chunks.map(r=>'<w:r><w:rPr>'+(r.bold?'<w:b/>':'')+(r.italic?'<w:i/>':'')+'</w:rPr><w:t xml:space="preserve">'+r.text.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</w:t></w:r>').join('')+'</w:p>';
+}
+function docx(paras){
+ const xml='<?xml version="1.0" encoding="UTF-8"?>'+
+ '<w:document xmlns:w="'+N+'"><w:body>'+paras.map(p=>typeof p==='string'?xmlParagraph(p):xmlParagraph('',p)).join('')+'</w:body></w:document>';
+ return zip.zipSync({'word/document.xml':enc.encode(xml)});
+}
+function content(data){
+ const doc=new DOMParser().parseFromString(dec.decode(zip.unzipSync(data)['word/document.xml']),'application/xml');
+ const ps=[...doc.getElementsByTagNameNS(N,'body')[0].childNodes].filter(e=>e.nodeType===1&&e.localName==='p');
+ const runs=p=>[...p.getElementsByTagNameNS(N,'r')].map(r=>({
+   text:[...r.getElementsByTagNameNS(N,'t')].map(t=>t.textContent||'').join(''),
+   bold:[...r.getElementsByTagNameNS(N,'b')].some(b=>b.getAttributeNS(N,'val')!=='0'),
+   italic:[...r.getElementsByTagNameNS(N,'i')].some(b=>b.getAttributeNS(N,'val')!=='0')
+ }));
+ return {ps,runs,txt:i=>runs(ps[i-1]).map(x=>x.text).join('')};
+}
+function phraseRuns(o,i,phrase){
+ let pos=0;return o.runs(o.ps[i-1]).filter(r=>{const a=pos;pos+=r.text.length;const full=o.txt(i),idx=full.indexOf(phrase);return idx>=0&&a<idx+phrase.length&&pos>idx;});
+}
+function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,wrongSource=false}={}){
+ const name=mode==='Б'?'Обслужваща площадка':'Складови помещения';
+ const zone='BG0001031 „Родопи – Средни“';
+ const h='Относно: Уведомление за инвестиционно предложение (ИП): „'+name+'“ в поземлен имот с идентификатор '+id+', населено място с. Примерно, община Тестова, област Примерна.';
+ const p=Array.from({length:mode==='Б'?44:42},()=>''),e=Array.from({length:50},()=> '');
+ p[10]=duplicate?h+' в поземлен имот с идентификатор '+id+', населено място с. Примерно, община Тестова, област Примерна.':h;
+ e[10]='Относно: Уведомление за инвестиционно предложение (ИП): „'+name+'“ в поземлен имот с идентификатор '+id+', населено място с. Примерно, община ХХХХХХХХ, област ХХХХХХХХ.';
+ p[17]='Инвестиционното предложение попада в обхвата на чл. 2, ал. 2, по приложение № 1 към чл. 10, ал. 1. от същата.';
+ e[18]=p[17];
+ if(mode==='Б'){
+  p[18]='С инвестиционното предложение се предвижда '+name+' в поземлен имот с идентификатор '+id+'.';
+  p[22]='За евентуална промяна на предназначението и/или начина на трайно ползване на имота няма потвърдени данни в представената документация.';
+  p[23]='Имотът, предмет на инвестиционното предложение, с идентификатор '+id+' попада в границите на защитена зона '+zone+'.';
+  p[24]='Защитена зона '+zone+' за опазване на природните местообитания е обявена със заповед.';
+  p[25]=zt?
+   'При извършената пространствена проверка е установено, че поземленият имот с идентификатор '+id+' попада в границите на природна забележителност „Свети Дух“.' :
+   'При извършената пространствена проверка е установено, че поземленият имот с идентификатор '+id+' не попада в границите на защитени територии.';
+  p[34]='В тази връзка и на основание чл. 2, ал. 2 от Наредбата за ОС Ви уведомявам, че преценката на компетентния орган за така заявеното инвестиционно предложение: „'+name+'“ в поземлен имот с идентификатор '+id+' изисква проверка на заявените параметри, приложимите режими на '+zone+' и резултатите от пространствената проверка, преди определяне на окончателния процедурен извод.';
+  e[23]='Поземленият имот с идентификатор '+id+' попада изцяло или частично в границите на защитена зона BG0001031.';
+  e[24]='Приложими са режимите на BG0001031.';
+  e[25]=p[25];
+  e[32]='Изводът за пространствено попадане на имота се прави с оглед на BG0001031.';
+ }else{
+  p[22]='Поземленият имот с идентификатор '+id+' не попада в границите на защитени зони.';
+  p[24]='Поземленият имот с идентификатор '+id+'не попада в границите на защитени територии.';
+  e[23]='При пространствен анализ не е установено попадане на имота в зона.';
+ }
+ const files={
+ '01_Proekt_na_stanovishte_Klasicheski.docx':docx(p),
+ '02_Proekt_na_stanovishte_Eksperten.docx':docx(e),
+ '03_GIS_analiz.pdf':enc.encode('%PDF-FIXTURE-A'),
+ '04_Normativni_i_dokumentalni_referencii.pdf':enc.encode('%PDF-FIXTURE-B'),
+ 'README_BG.txt':enc.encode('FIXTURE')
+ };
+ return {files,blob:new Blob([zip.zipSync(files)],{type:'application/zip'}),id};
+}
+async function run(){
+ let passes=0;
+ for(const [mode,id,zt] of [['А','12345.678.901',false],['Б','12345.678.901',false],['Б','98765.432.109',true]]){
+  const sample=synthetic({mode,id,zt});
+  const result=await gate.fix(sample.blob);
+  const out=zip.unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
+  assert.deepEqual(Object.keys(out).sort(),Object.keys(sample.files).sort());
+  for(const name of Object.keys(sample.files).filter(x=>!x.endsWith('.docx')))assert.deepEqual(out[name],sample.files[name]);
+  const c=content(out['01_Proekt_na_stanovishte_Klasicheski.docx']);
+  const e=content(out['02_Proekt_na_stanovishte_Eksperten.docx']);
+  assert.ok(c.txt(11).includes(id),'subject must retain exact arbitrary cadastral identifier');
+  assert.ok(c.txt(11).includes('Тестова'),'subject must retain input municipality');
+  assert.equal(phraseRuns(c,11,'Относно').every(r=>r.bold&&r.italic),true,'heading bold and italic');
+  assert.equal(phraseRuns(c,11,'„'+(mode==='Б'?'Обслужваща площадка':'Складови помещения')+'“').every(r=>r.bold&&r.italic),true,'subject title bold+italic');
+  assert.ok(!c.txt(18).includes('ал. 1. от'));
+  assert.ok(!e.txt(19).includes('ал. 1. от'));
+  assert.ok(e.txt(11).includes('община Тестова, област Примерна'));
+  if(mode==='Б'){
+   assert.ok(c.txt(23).includes('не е свързано с промяна предназначението'));
+   assert.ok(c.txt(35).endsWith('е, че не е необходимо провеждане на процедура по реда на Глава втора от Наредбата за ОС.'));
+   assert.ok(!c.txt(35).includes('изисква проверка'));
+   assert.ok(e.txt(24).includes('BG0001031 „Родопи – Средни“'));
+   assert.ok(e.txt(25).includes('BG0001031 „Родопи – Средни“'));
+   assert.ok(e.txt(33).includes('BG0001031 „Родопи – Средни“'));
+   assert.ok(!e.txt(24).includes('попада изцяло или частично'));
+   const incomplete=phraseRuns(e,33,'попадане');assert.equal(incomplete.some(r=>r.bold),false,'inner word попадане must not be bold');
+   if(!zt){
+    const neg=phraseRuns(c,26,'не попада');assert.equal(neg.every(r=>r.bold),true,'entire negative relation must be bold');
+   }
+  }else{
+   assert.ok(c.txt(25).includes(id+' не попадат')||c.txt(25).includes(id+' не попада'));
+   assert.equal(phraseRuns(c,25,'не попада').every(r=>r.bold),true);
+  }
+  passes++;console.log('PASS',mode,zt?'B+ZT':'',id);
+ }
+ console.log('PASS KT79 universal synthetic regression',passes+'/3; two arbitrary cadastral IDs; all non-DOCX files byte-identical');
+}
+run().catch(e=>{console.error(e);process.exitCode=1});
