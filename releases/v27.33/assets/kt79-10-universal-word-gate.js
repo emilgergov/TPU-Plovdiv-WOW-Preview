@@ -294,16 +294,23 @@ function expertInstitutionalPass(ps,report){
    const retained=lines.filter(x=>!risky.test(x)).join(' ').trim();
    rewrite(p,retained||'При преценката на техническите решения са съобразени единствено заявените в уведомлението параметри на електроснабдяване, водоснабдяване и управление на отпадъчните води.', 'technical facts retained');
   }else if(section===2){
-   // Exact GIS facts and verified administrative orders are never replaced.
-   if(/\bBG\d{7}\b/u.test(t)&&/(?:Заповед|заповед)\s*№/u.test(t)){
-    const pieces=t.split(/(?<=[.!?])\s+(?=[А-Я])/u);
-    const safe=pieces.filter(x=>!risky.test(x)).join(' ').trim();
-    rewrite(p,safe||t,'legal facts preserved');continue;
+   // Keep every concrete GIS/admin fact. Only discard prospective sentences.
+   const originalIds=[...t.matchAll(/\d{5}\.\d+\.\d+|BG\d{7}/gu)].map(x=>x[0]);
+   const pieces=t.split(/(?<=[.!?])\s+(?=[А-Я])/u);
+   let kept=pieces.filter(x=>!risky.test(x)).join(' ').trim();
+   // An unsupported future-work clause can share a sentence with a zone fact.
+   // In that case preserve the complete fact-bearing prefix instead of replacing
+   // it with a generic assessment.
+   if(!kept && originalIds.length){
+    const m=risky.exec(t);
+    if(m&&m.index>0)kept=t.slice(0,m.index).replace(/[,:;\s]+$/u,'').trim();
    }
-   if(/(?:режими|заповеди)\s+подлежат\s+на/u.test(t)){
-    rewrite(p,t.replace(/Конкретните режими и приложимите заповеди подлежат на експертна проверка по нормативния архив\.?/u,'За правната преценка са относими официално удостоверените режими и актове за защитената зона.'), 'verified zones retained');
+   if(originalIds.length){
+    for(const id of originalIds)if(!kept.includes(id))
+     throw Error('KT79: protected GIS identifier would be lost by Expert editing');
+    rewrite(p,kept,'verified GIS facts retained');
    }else{
-    const value=/(?:екологични оценки|процедур|административно решение|категорично становище)/iu.test(t)?approved[2]:/(?:Закон|Наредб|норматив|правн)/iu.test(t)?approved[0]:approved[1];
+    const value=kept||(/(?:екологични оценки|процедур|административно решение|категорично становище)/iu.test(t)?approved[2]:/(?:Закон|Наредб|норматив|правн)/iu.test(t)?approved[0]:approved[1]);
     rewrite(p,value,'completed legal assessment');
    }
   }else{
