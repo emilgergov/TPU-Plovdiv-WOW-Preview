@@ -142,6 +142,11 @@ async function run(){
    assert.ok(!e.txt(41).includes('Предварителното мнение'),'Expert B must reject AI opinion');
    const incomplete=phraseRuns(e,33,'попадане');assert.equal(incomplete.some(r=>r.bold),false,'inner word попадане must not be bold');
    if(zt)assert.ok(c.txt(11).includes('местност „Общия балкан“'),'confirmed B+ZT locality must be retained');
+   if(zt){
+    assert.ok(c.txt(26).includes(id+' попада'),'protected-territory parcel and bold positive relation separated');
+    assert.equal(phraseRuns(c,26,'попада').every(r=>r.bold),true,'protected territory positive relation must remain bold');
+    assert.equal(phraseRuns(c,26,'природна забележителност „Свети Дух“').every(r=>r.bold),true,'ZT name must remain bold');
+   }
    if(!zt){
     const neg=phraseRuns(c,26,'не попада');assert.equal(neg.every(r=>r.bold),true,'entire negative relation must be bold');
    }
@@ -152,6 +157,7 @@ async function run(){
    assert.ok(c.txt(35).startsWith('При промяна в параметрите на ИП'),'Classic A amendment notification approved');
    assert.ok(c.txt(25).includes(id+' не попадат')||c.txt(25).includes(id+' не попада'));
    assert.equal(phraseRuns(c,25,'не попада').every(r=>r.bold),true);
+   assert.ok(c.txt(25).includes(id+' не попадат')||c.txt(25).includes(id+' не попада'),'A parcel to negative GIS relation separated');
   }
   passes++;console.log('PASS',mode,zt?'B+ZT':'',id);
  }
