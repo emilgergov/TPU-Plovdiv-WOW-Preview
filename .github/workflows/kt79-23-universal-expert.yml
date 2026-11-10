@@ -23,5 +23,6 @@ jobs:
         run: |
           mkdir -p /tmp/kt7923
           cp releases/v27.33/assets/kt79-10-universal-word-gate.js /tmp/kt7923/kt79-10-universal-word-gate.js
+          cp releases/v27.32/assets/kt79-10-universal-word-gate.js /tmp/kt7923/kt79-22-base-gate.js
           cp kt79-23-universal-regression.cjs /tmp/kt7923/kt79-10-universal-regression.cjs
           (cd /tmp/kt7923 && NODE_PATH="$GITHUB_WORKSPACE/node_modules" node kt79-10-universal-regression.cjs)
