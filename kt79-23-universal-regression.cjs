@@ -10,6 +10,9 @@ const script=fs.readFileSync('kt79-10-universal-word-gate.js','utf8');
 const window={fflate:zip};
 vm.runInNewContext(script,{window,DOMParser,XMLSerializer,TextEncoder,TextDecoder,Blob,console});
 const gate=window.KT79FinalApproved;
+const baseWindow={fflate:zip};
+vm.runInNewContext(fs.readFileSync('kt79-22-base-gate.js','utf8'),{window:baseWindow,DOMParser,XMLSerializer,TextEncoder,TextDecoder,Blob,console});
+const baseGate=baseWindow.KT79FinalApproved;
 assert.equal(typeof gate.fix,'function');
 const N='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 function xmlParagraph(s,runs=null){
@@ -94,9 +97,12 @@ async function run(){
  for(const [mode,id,zt,multi,aiConclusion] of [['А','12345.678.901',false,false,false],['Б','12345.678.901',false,false,false],['Б','98765.432.109',true,false,false],['Б','13579.246.810',false,true,false],['Б','24680.135.709',true,false,true],['Б','24680.135.710',false,true,true]]){
   const sample=synthetic({mode,id,zt,duplicate:zt,multi,aiConclusion});
   const result=await gate.fix(sample.blob);
+  const baseResult=await baseGate.fix(sample.blob);
+  const prior=zip.unzipSync(new Uint8Array(await baseResult.blob.arrayBuffer()));
   const out=zip.unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
   assert.deepEqual(Object.keys(out).sort(),Object.keys(sample.files).sort());
   for(const name of Object.keys(sample.files).filter(x=>!x.endsWith('.docx')))assert.deepEqual(out[name],sample.files[name]);
+  assert.deepEqual(out['01_Proekt_na_stanovishte_Klasicheski.docx'],prior['01_Proekt_na_stanovishte_Klasicheski.docx'],'Classic DOCX MUST be byte-for-byte identical to V27.32');
   const c=content(out['01_Proekt_na_stanovishte_Klasicheski.docx']);
   const e=content(out['02_Proekt_na_stanovishte_Eksperten.docx']);
   const mustHave=['1. ПРЕДМЕТ','2. ПРОСТРАНСТВЕНО','3. ПРЕЦЕНКА','4. ПРЕЦЕНКА'];
