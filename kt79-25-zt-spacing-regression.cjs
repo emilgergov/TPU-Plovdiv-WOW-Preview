@@ -90,7 +90,7 @@ function synthetic({mode='Б',id='12345.678.901',zt=false,duplicate=false,multi=
  let plain=typeof value==='string'?value:value.map(x=>x.text).join('');
  // The older A synthetic fixture deliberately omitted this space to test its
  // original repair; preserve that original coverage in the new run topology.
- if(mode==='А')plain=plain.replace(/(\\d{5}\\.\\d+\\.\\d+)(?=не попада)/u,'$1 ');
+ if(mode==='А')plain=plain.replace(/(\d{5}\.\d+\.\d+)(?=не попада)/u,'$1 ');
  const hit=plain.match(/^([\s\S]*\d{5}\.\d+\.\d+)( +)(не попада(?:т)?|попада)([\s\S]*)$/u);
  if(!hit)throw Error('fixture requires cadastral identifier + gap + relation');
  p[ztIndex]=[{text:hit[1]},{text:hit[2]},{text:hit[3],bold:true},{text:hit[4]}];
