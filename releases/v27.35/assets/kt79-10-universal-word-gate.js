@@ -191,8 +191,7 @@ function semanticSpans(p,report){
 // This is strictly OOXML normalization: no letters, words, IDs or decisions change.
 function attachGISSpaceToCadastralRun(p,report){
  const before=text(p);
- if(!/При извършената пространствена проверка/u.test(before)||
-    !/защитени територии|защитена територия|природна забележителност|защитена местност|резерват|природен парк/u.test(before))return;
+ if(!/защитени територии|защитена територия|природна забележителност|защитена местност|резерват|природен парк/u.test(before))return;
  const runs=children(p,'r');
  let fixed=0;
  for(let i=1;i+1<runs.length;i++){
