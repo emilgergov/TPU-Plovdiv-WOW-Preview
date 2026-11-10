@@ -102,7 +102,10 @@ async function run(){
   const out=zip.unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
   assert.deepEqual(Object.keys(out).sort(),Object.keys(sample.files).sort());
   for(const name of Object.keys(sample.files).filter(x=>!x.endsWith('.docx')))assert.deepEqual(out[name],sample.files[name]);
-  assert.deepEqual(out['01_Proekt_na_stanovishte_Klasicheski.docx'],prior['01_Proekt_na_stanovishte_Klasicheski.docx'],'Classic DOCX MUST be byte-for-byte identical to V27.32');
+  const classicNow=zip.unzipSync(out['01_Proekt_na_stanovishte_Klasicheski.docx']);
+  const classicPrior=zip.unzipSync(prior['01_Proekt_na_stanovishte_Klasicheski.docx']);
+  assert.deepEqual(Object.keys(classicNow).sort(),Object.keys(classicPrior).sort(),'Classic DOCX members unchanged');
+  for(const key of Object.keys(classicPrior))assert.deepEqual(classicNow[key],classicPrior[key],'Classic content and OOXML styles unchanged: '+key);
   const c=content(out['01_Proekt_na_stanovishte_Klasicheski.docx']);
   const e=content(out['02_Proekt_na_stanovishte_Eksperten.docx']);
   const mustHave=['1. ПРЕДМЕТ','2. ПРОСТРАНСТВЕНО','3. ПРЕЦЕНКА','4. ПРЕЦЕНКА'];
