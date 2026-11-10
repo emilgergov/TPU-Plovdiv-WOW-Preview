@@ -1,0 +1,26 @@
+name: KT79-25 Pinned Trial Release
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  trial-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Immutable candidate verification
+        run: |
+          while read -r hash path; do test "$(git hash-object "$path")" = "$hash" || exit 1; done < releases/v27.35/RELEASE_LOCK.gitblob
+          grep -q '/releases/v27.35/assets/kt79-10-universal-word-gate.js' releases/v27.35/index.html
+          node --check releases/v27.35/assets/kt79-10-universal-word-gate.js
+      - name: Six ZT formatting and Classic text preservation cases
+        run: |
+          mkdir -p /tmp/trial25
+          cp releases/v27.35/assets/kt79-10-universal-word-gate.js /tmp/trial25/kt79-10-universal-word-gate.js
+          cp releases/v27.34/assets/kt79-10-universal-word-gate.js /tmp/trial25/kt79-22-base-gate.js
+          cp kt79-25-zt-spacing-regression.cjs /tmp/trial25/kt79-10-universal-regression.cjs
+          (cd /tmp/trial25 && NODE_PATH="$GITHUB_WORKSPACE/node_modules" node kt79-10-universal-regression.cjs)
