@@ -1,0 +1,26 @@
+name: KT79-25 ZT Word-Run Boundary QA
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  zt-typography:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Validate Word adapter and test
+        run: |
+          node --check releases/v27.35/assets/kt79-10-universal-word-gate.js
+          node --check kt79-25-zt-spacing-regression.cjs
+          grep -q '/releases/v27.35/assets/kt79-10-universal-word-gate.js' releases/v27.35/index.html
+      - name: Six A/B scenarios, exact content, run boundary and Expert QA
+        run: |
+          mkdir -p /tmp/kt79-25
+          cp releases/v27.35/assets/kt79-10-universal-word-gate.js /tmp/kt79-25/kt79-10-universal-word-gate.js
+          cp releases/v27.34/assets/kt79-10-universal-word-gate.js /tmp/kt79-25/kt79-22-base-gate.js
+          cp kt79-25-zt-spacing-regression.cjs /tmp/kt79-25/kt79-10-universal-regression.cjs
+          (cd /tmp/kt79-25 && NODE_PATH="$GITHUB_WORKSPACE/node_modules" node kt79-10-universal-regression.cjs)
