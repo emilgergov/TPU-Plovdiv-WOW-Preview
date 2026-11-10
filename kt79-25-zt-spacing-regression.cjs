@@ -119,11 +119,11 @@ async function run(){
   for(let i=1;i<=currentClassic.ps.length;i++)assert.equal(currentClassic.txt(i),previousClassic.txt(i),'Classic text identical: paragraph '+i);
   const zi=mode==='А'?25:26;
   const zr=currentClassic.runs(currentClassic.ps[zi-1]);
-  const relationIndex=zr.findIndex(x=>/^(?:не\\s+)?попада(?:т)?$/u.test(x.text)&&x.bold);
+  const relationIndex=zr.findIndex(x=>/^(?:не\s+)?попада(?:т)?$/u.test(x.text)&&x.bold);
   assert.ok(relationIndex>0,'GIS relation retains bold');
-  assert.ok(/\\d{5}\\.\\d+\\.\\d+ $/u.test(zr[relationIndex-1].text),'parcel and gap belong to ONE ordinary preceding run');
+  assert.ok(/\d{5}\.\d+\.\d+ $/u.test(zr[relationIndex-1].text),'parcel and gap belong to ONE ordinary preceding run');
   assert.equal(zr[relationIndex-1].bold,false,'space must not be bold');
-  assert.ok(!zr.some((x,i)=>x.text===' '&&i+1<zr.length&&/^(?:не\\s+)?попада/u.test(zr[i+1].text)),'no standalone whitespace before GIS relation');
+  assert.ok(!zr.some((x,i)=>x.text===' '&&i+1<zr.length&&/^(?:не\s+)?попада/u.test(zr[i+1].text)),'no standalone whitespace before GIS relation');
   const c=content(out['01_Proekt_na_stanovishte_Klasicheski.docx']);
   const e=content(out['02_Proekt_na_stanovishte_Eksperten.docx']);
   const mustHave=['1. ПРЕДМЕТ','2. ПРОСТРАНСТВЕНО','3. ПРЕЦЕНКА','4. ПРЕЦЕНКА'];
