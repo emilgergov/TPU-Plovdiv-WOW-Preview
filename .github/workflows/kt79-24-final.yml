@@ -1,0 +1,28 @@
+name: KT79-24 Final Unified Pre-ZIP Control
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install testing libraries
+        run: npm install --no-save --no-package-lock --ignore-scripts fflate @xmldom/xmldom
+      - name: Syntax-check final quality gate
+        run: |
+          node --check kt79-24-joint-gate-regression.cjs
+          node --check releases/v27.34/assets/kt79-10-universal-word-gate.js
+      - name: Run combined legal and impact gate
+        run: node kt79-24-joint-gate-regression.cjs
+      - name: Six A/B/ZZ/ZT/Expert/Classic regression scenarios
+        run: |
+          mkdir -p /tmp/kt7924
+          cp releases/v27.34/assets/kt79-10-universal-word-gate.js /tmp/kt7924/kt79-10-universal-word-gate.js
+          cp releases/v27.32/assets/kt79-10-universal-word-gate.js /tmp/kt7924/kt79-22-base-gate.js
+          cp kt79-23-universal-regression.cjs /tmp/kt7924/kt79-10-universal-regression.cjs
+          (cd /tmp/kt7924 && NODE_PATH="$GITHUB_WORKSPACE/node_modules" node kt79-10-universal-regression.cjs)
