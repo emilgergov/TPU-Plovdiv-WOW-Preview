@@ -113,6 +113,22 @@ jobs:
           cp kt79-22-final-regression.cjs /tmp/kt79-22/kt79-10-universal-regression.cjs
           (cd /tmp/kt79-22 && NODE_PATH=/tmp/kt79-regression/node_modules node kt79-10-universal-regression.cjs)
 
+          # KT79-23: the deployed artifact must be the exact pinned V27.33
+          # whose Expert content is institutional and whose Classic OOXML equals V27.32.
+          test -s releases/v27.33/index.html
+          test -s releases/v27.33/RELEASE_LOCK.gitblob
+          while read -r expected filepath; do
+            test -f "$filepath"
+            test "$(git hash-object "$filepath")" = "$expected" || { echo "::error::V27.33 release changed: $filepath"; exit 1; }
+          done < releases/v27.33/RELEASE_LOCK.gitblob
+          grep -q '/releases/v27.33/assets/kt79-10-universal-word-gate.js' releases/v27.33/index.html
+          node --check releases/v27.33/assets/kt79-10-universal-word-gate.js
+          mkdir -p /tmp/kt79-23
+          cp releases/v27.33/assets/kt79-10-universal-word-gate.js /tmp/kt79-23/kt79-10-universal-word-gate.js
+          cp releases/v27.32/assets/kt79-10-universal-word-gate.js /tmp/kt79-23/kt79-22-base-gate.js
+          cp kt79-23-universal-regression.cjs /tmp/kt79-23/kt79-10-universal-regression.cjs
+          (cd /tmp/kt79-23 && NODE_PATH=/tmp/kt79-regression/node_modules node kt79-10-universal-regression.cjs)
+
           cp -R releases _site/releases
           python3 - <<'PY'
           from pathlib import Path
