@@ -147,6 +147,23 @@ jobs:
           cp kt79-23-universal-regression.cjs /tmp/kt79-24/kt79-10-universal-regression.cjs
           (cd /tmp/kt79-24 && NODE_PATH=/tmp/kt79-regression/node_modules node kt79-10-universal-regression.cjs)
 
+          # KT79-25: test candidate only. Must pass run-level ZT whitespace
+          # assertions and preserve all approved Classic text / PDF resources.
+          test -s releases/v27.35/index.html
+          test -s releases/v27.35/RELEASE_LOCK.gitblob
+          while read -r expected filepath; do
+            test -f "$filepath"
+            actual=$(git hash-object "$filepath")
+            test "$actual" = "$expected" || { echo "::error::V27.35 candidate changed: $filepath"; exit 1; }
+          done < releases/v27.35/RELEASE_LOCK.gitblob
+          grep -q '/releases/v27.35/assets/kt79-10-universal-word-gate.js' releases/v27.35/index.html
+          node --check releases/v27.35/assets/kt79-10-universal-word-gate.js
+          mkdir -p /tmp/kt79-25
+          cp releases/v27.35/assets/kt79-10-universal-word-gate.js /tmp/kt79-25/kt79-10-universal-word-gate.js
+          cp releases/v27.34/assets/kt79-10-universal-word-gate.js /tmp/kt79-25/kt79-22-base-gate.js
+          cp kt79-25-zt-spacing-regression.cjs /tmp/kt79-25/kt79-10-universal-regression.cjs
+          (cd /tmp/kt79-25 && NODE_PATH=/tmp/kt79-regression/node_modules node kt79-10-universal-regression.cjs)
+
           cp -R releases _site/releases
           python3 - <<'PY'
           from pathlib import Path
