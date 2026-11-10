@@ -200,9 +200,9 @@ function attachGISSpaceToCadastralRun(p,report){
   const a=children(left,'t'),w=children(gap,'t'),z=children(right,'t');
   if(a.length!==1||w.length!==1||z.length!==1)continue;
   const first=a[0].textContent||'',spaces=w[0].textContent||'',next=z[0].textContent||'';
-  if(!/\\d{5}\\.\\d+\\.\\d+$/u.test(first))continue;
+  if(!/\d{5}\.\d+\.\d+$/u.test(first))continue;
   if(!/^ +$/u.test(spaces))continue;
-  if(!/^(?:не\\s+)?попада(?:т)?(?:$|\\s)/u.test(next))continue;
+  if(!/^(?:не\s+)?попада(?:т)?(?:$|\s)/u.test(next))continue;
   // The added space is part of the ordinary preceding parcel segment, not
   // the following bold word. Keep the exact underlying characters.
   const lprops=children(left,'rPr')[0];
