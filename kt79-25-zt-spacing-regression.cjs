@@ -121,7 +121,7 @@ async function run(){
   const zr=currentClassic.runs(currentClassic.ps[zi-1]);
   const relationIndex=zr.findIndex(x=>/^(?:не\s+)?попада(?:т)?$/u.test(x.text)&&x.bold);
   assert.ok(relationIndex>0,'GIS relation retains bold');
-  assert.ok(/\d{5}\.\d+\.\d+ $/u.test(zr[relationIndex-1].text),'parcel and gap belong to ONE ordinary preceding run');
+  assert.ok(/\d{5}\.\d+\.\d+ $/u.test(zr[relationIndex-1].text),'parcel/gap mismatch '+JSON.stringify(zr.map(x=>({t:x.text,b:x.bold}))));
   assert.equal(zr[relationIndex-1].bold,false,'space must not be bold');
   assert.ok(!zr.some((x,i)=>x.text===' '&&i+1<zr.length&&/^(?:не\s+)?попада/u.test(zr[i+1].text)),'no standalone whitespace before GIS relation');
   const c=content(out['01_Proekt_na_stanovishte_Klasicheski.docx']);
